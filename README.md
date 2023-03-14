@@ -1,5 +1,5 @@
 # UChicago
-UChicago repository for all coding demos, projects, and assignments completed at UChicago.
+UChicago repository for all coding demos, labs, projects, and assignments completed at UChicago.
 
 Programming Languages include R, Python, and Jupyter Notebook
 
