@@ -1,0 +1,596 @@
+---
+title: "R lab 2 for BIOS 20152"
+author: "Keegan Ballantyne"
+output:
+html_document: default
+---
+
+Before starting work:
+
+* Read sections 3.3 and 4.3 of Quantifying Life
+* Work through Tutorials 3 and 4
+* Download data files `kong_mutation_data.txt`, `HR_data_combined.csv`, `Macaroni_Penguins_Green.csv`
+
+
+## Part 1: Reading in data and fitting functions by eye
+
+In this section you will make scatterplots of two data variables and fit a linear function to it by eyeball estimation. Your task will be to choose the parameters slope and intercept that produce a plot that does a decent job of resembling the data, meaning that the line should pass through the scatterplot and capture its trend (rising or falling) fairly well. 
+
+For each data set below, perform the following tasks:
+1) read in the data; calculate and print out the means and variances of the indicated variables;  plot histograms of the same.
+2) make a scatterplot of the indicated variables with the explanatory variable on the x-axis and the response variable on the y-axis; assign slope and intercept variables with some guesstimated values; calculate a vector of predicted values for the response variable using the slope, intercept, and the explanatory variable (using an assignment of the form `y <- m*x +b`); use `lines()` to add a plot of the predicted values to the data plot.
+3) calculate and assign the vector of differences between the response variable and the predicted values (called the *residuals*) and report its mean and variance; calculate the square of these values and report the sum of squared residuals using the `sum()` function.
+4) try different values of the slope and intercept until the plot of the predicted values (the model) is pretty close to the scatterplot of the data points - does not need to be perfect but the line should pass roughly through the scatterplot of data. Report the mean and variance of the residuals, and the sum of squared residuals.
+
+
+1. Read in the mutations data set found in the file `kong_mutation_data.txt`, using the function `read.table` with option `header=TRUE`. It contains three variables: `PatAge` (paternal age in years), `MatAge` (maternal age in years), and `Mutations` (number of de novo mutations in each person). 
+
+a) Perform the tasks described above with `MatAge` for explanatory variable and `Mutations` for response variable.
+
+Task 1
+```{r}
+mutations_data <- read.table(file = "kong_mutation_data.txt", header = TRUE)
+options(digits = 2)
+cat("The mean Maternal Age is: ")
+print(mean(mutations_data$MatAge, na.rm = TRUE))
+cat("The variance of the Maternal Age is: ")
+print(var(mutations_data$MatAge, na.rm = TRUE))
+hist(mutations_data$MatAge, main = "Histogram of Maternal Ages", xlab = "Ages")
+options(digits = 2)
+cat("The mean number of Mutations is: ")
+print(mean(mutations_data$MatAge, na.rm = TRUE))
+cat("The variance of the Mutations is: ")
+print(var(mutations_data$Mutations, na.rm = TRUE))
+hist(mutations_data$Mutations, main = "Histogram of Mutations", xlab = "Ages")
+```
+
+Task 2
+```{r}
+plot(mutations_data$MatAge, mutations_data$Mutations, main = "Maternal Age vs. Mutations", xlab = "Maternal Age", ylab = "Number of Mutations")
+mat_m <- 2
+mat_b <- 5
+guess_y <- (mat_m*mutations_data$MatAge)+mat_b
+lines(mutations_data$MatAge, guess_y, col = 'red')
+```
+
+Task 3
+```{r}
+mat_differences <- mutations_data$Mutations - guess_y 
+options(digits = 5)
+cat("The mean of the differences is: ")
+print(mean(mat_differences, na.rm = TRUE))
+cat("The variance of the differences is: ")
+print(var(mat_differences, na.rm = TRUE))
+cat("The sum of the squared residuals are: ")
+print(sum(mat_differences^2, na.rm = TRUE))
+```
+
+Task 4
+```{r}
+plot(mutations_data$MatAge, mutations_data$Mutations, main = "Maternal Age vs. Mutations", xlab = "Maternal Age", ylab = "Number of Mutations")
+mat_m2 <- 2
+mat_b2 <- 10.25
+guess_y2 <- (mat_m2*mutations_data$MatAge)+mat_b2
+lines(mutations_data$MatAge, guess_y2, col = 'red')
+
+mat_differences2 <- mutations_data$Mutations - guess_y2 
+options(digits = 5)
+cat("The mean of the differences is: ")
+print(mean(mat_differences2, na.rm = TRUE))
+cat("The variance of the differences is: ")
+print(var(mat_differences2, na.rm = TRUE))
+cat("The sum of the squared residuals are: ")
+print(sum(mat_differences2^2, na.rm = TRUE))
+```
+
+
+b) Perform the tasks described above with `PatAge` for explanatory variable and `Mutations` for response variable.
+  
+Task 1
+```{r}
+options(digits = 2)
+cat("The mean Paternal Age is: ")
+print(mean(mutations_data$PatAge, na.rm = TRUE))
+cat("The variance of the Paternal Age is: ")
+print(var(mutations_data$PatAge, na.rm = TRUE))
+hist(mutations_data$PatAge, main = "Histogram of Paternal Ages", xlab = "Ages")
+options(digits = 2)
+cat("The mean number of Mutations is: ")
+print(mean(mutations_data$Mutations, na.rm = TRUE))
+cat("The variance of the Mutations is: ")
+print(var(mutations_data$Mutations, na.rm = TRUE))
+hist(mutations_data$Mutations, main = "Histogram of Mutations", xlab = "Ages")
+```
+
+Task 2
+```{r}
+plot(mutations_data$PatAge, mutations_data$Mutations, main = "Paternal Age vs. Mutations", xlab = "Paternal Age", ylab = "Number of Mutations")
+mat_m3 <- 2
+mat_b3 <- 2.5
+guess_y3 <- (mat_m3*mutations_data$PatAge)+mat_b3
+lines(mutations_data$PatAge, guess_y3, col = 'red')
+```
+
+Task 3
+```{r}
+mat_differences3 <- mutations_data$Mutations - guess_y3 
+options(digits = 5)
+cat("The mean of the differences is: ")
+print(mean(mat_differences3, na.rm = TRUE))
+cat("The variance of the differences is: ")
+print(var(mat_differences3, na.rm = TRUE))
+cat("The sum of the squared residuals are: ")
+print(sum(mat_differences3^2, na.rm = TRUE))
+```
+
+Task 4
+```{r}
+plot(mutations_data$PatAge, mutations_data$Mutations, main = "Paternal Age vs. Mutations", xlab = "Paternal Age", ylab = "Number of Mutations")
+mat_m4 <- 2
+mat_b4 <- 3.5
+guess_y4 <- (mat_m4*mutations_data$PatAge)+mat_b4
+lines(mutations_data$PatAge, guess_y4, col = 'red')
+
+mat_differences4 <- mutations_data$Mutations - guess_y4 
+options(digits = 5)
+cat("The mean of the differences is: ")
+print(mean(mat_differences4, na.rm = TRUE))
+cat("The variance of the differences is: ")
+print(var(mat_differences4, na.rm = TRUE))
+cat("The sum of the squared residuals are: ")
+print(sum(mat_differences4^2, na.rm = TRUE))
+```
+
+
+2. Read in the data set of heart rates before and after exercise found in the file `HR_data_combined.csv` using `read.csv`. It contains variables `Rest1` (heart rate at rest in bpm), `Rest2` (heart rate at rest in bpm), `Ex1` (heart rate after exercise in bpm), `Ex2` (heart rate after exercise in bpm).
+
+
+a) Perform the tasks described above with `Rest1` for explanatory variable and `Ex1` for response variable.  
+
+Task 1
+```{r}
+heart_rates <- read.csv(file = "HR_data_combined.csv", header = TRUE)
+options(digits = 2)
+cat("The mean Resting Heart Rate 1 is: ")
+print(mean(heart_rates$Rest1, na.rm = TRUE))
+cat("The variance of the Rest Heart Rate 1 is: ")
+print(var(heart_rates$Rest1, na.rm = TRUE))
+hist(heart_rates$Rest1, main = "Histogram of Resting Heart Rates 1", xlab = "Rates (bpm)")
+options(digits = 2)
+cat("The mean Exercising Heart Rate 1 is: ")
+print(mean(heart_rates$Ex1, na.rm = TRUE))
+cat("The variance of Exercising Heart Rate 1 is: ")
+print(var(heart_rates$Ex1, na.rm = TRUE))
+hist(heart_rates$Ex1, main = "Histogram of Exercising Heart Rates 1", xlab = "Rates (bpm)")
+```
+
+Task 2
+```{r}
+plot(heart_rates$Rest1, heart_rates$Ex1, main = "Resting Heart Rate 1 vs. Exercising Heart Rate 1", xlab = "Resting Heart Rate 1", ylab = "Exercising Heart Rate 1")
+mat_mhr <- 0.95
+mat_bhr <- 20
+guess_y5 <- (mat_mhr*heart_rates$Rest1)+mat_bhr
+lines(heart_rates$Rest1, guess_y5, col = 'red')
+```
+
+Task 3
+```{r}
+hr_differences <- heart_rates$Rest1 - guess_y5 
+options(digits = 5)
+cat("The mean of the differences is: ")
+print(mean(hr_differences, na.rm = TRUE))
+cat("The variance of the differences is: ")
+print(var(hr_differences, na.rm = TRUE))
+cat("The sum of the squared residuals are: ")
+print(sum(hr_differences^2, na.rm = TRUE))
+```
+
+Task 4
+```{r}
+plot(heart_rates$Rest1, heart_rates$Ex1, main = "Resting Heart Rate 1 vs. Exercising Heart Rate 1", xlab = "Resting Heart Rate 1", ylab = "Exercising Heart Rate 1")
+mat_mhr2 <- 1.05
+mat_bhr2 <- 20
+guess_y6 <- (mat_mhr2*heart_rates$Rest1)+mat_bhr2
+lines(heart_rates$Rest1, guess_y6, col = 'red')
+
+hr_differences2 <- heart_rates$Rest1 - guess_y6 
+options(digits = 5)
+cat("The mean of the differences is: ")
+print(mean(hr_differences2, na.rm = TRUE))
+cat("The variance of the differences is: ")
+print(var(hr_differences2, na.rm = TRUE))
+cat("The sum of the squared residuals are: ")
+print(sum(hr_differences2^2, na.rm = TRUE))
+```
+
+
+b) Perform the tasks described above with `Rest1` for explanatory variable and `Rest2` for response variable.
+
+Task 1
+```{r}
+options(digits = 2)
+cat("The mean Resting Heart Rate 1 is: ")
+print(mean(heart_rates$Rest1, na.rm = TRUE))
+cat("The variance of the Rest Heart Rate 1 is: ")
+print(var(heart_rates$Rest1, na.rm = TRUE))
+hist(heart_rates$Rest1, main = "Histogram of Resting Heart Rates 1", xlab = "Rates (bpm)")
+options(digits = 2)
+cat("The mean Resting Heart Rate 2 is: ")
+print(mean(heart_rates$Rest2, na.rm = TRUE))
+cat("The variance of the Rest Heart Rate 2 is: ")
+print(var(heart_rates$Rest2, na.rm = TRUE))
+hist(heart_rates$Rest2, main = "Histogram of Resting Heart Rates 2", xlab = "Rates (bpm)")
+```
+
+Task 2
+```{r}
+plot(heart_rates$Rest1, heart_rates$Rest2, main = "Resting Heart Rate 1 vs. Resting Heart Rate 2", xlab = "Resting Heart Rate 1", ylab = "Resting Heart Rate 2")
+mat_mhr3 <- 0.75
+mat_bhr3 <- 20
+guess_y7 <- (mat_mhr3*heart_rates$Rest1)+mat_bhr3
+lines(heart_rates$Rest1, guess_y7, col = 'red')
+```
+
+Task 3
+```{r}
+hr_differences3 <- heart_rates$Rest1 - guess_y7
+options(digits = 5)
+cat("The mean of the differences is: ")
+print(mean(hr_differences3, na.rm = TRUE))
+cat("The variance of the differences is: ")
+print(var(hr_differences3, na.rm = TRUE))
+cat("The sum of the squared residuals are: ")
+print(sum(hr_differences3^2, na.rm = TRUE))
+```
+
+Task 4
+```{r}
+plot(heart_rates$Rest1, heart_rates$Rest2, main = "Resting Heart Rate 1 vs. Resting Heart Rate 2", xlab = "Resting Heart Rate 1", ylab = "Resting Heart Rate 2")
+mat_mhr4 <- 0.80
+mat_bhr4 <- 15
+guess_y8 <- (mat_mhr4*heart_rates$Rest1)+mat_bhr4
+lines(heart_rates$Rest1, guess_y8, col = 'red')
+
+hr_differences4 <- heart_rates$Rest1 - guess_y8 
+options(digits = 5)
+cat("The mean of the differences is: ")
+print(mean(hr_differences4, na.rm = TRUE))
+cat("The variance of the differences is: ")
+print(var(hr_differences4, na.rm = TRUE))
+cat("The sum of the squared residuals are: ")
+print(sum(hr_differences4^2, na.rm = TRUE))
+```
+
+
+3. Read in the data from an experiment of Macaroni penguins running on a treadmill in the file `Macaroni_Penguins_Green.csv` using the function `read.csv()`. It contains four variables: `Group` (type of penguin), `ID` (specifies the individual penguin), `Heart.Rate` (in beats per minute) `Mass.Specific.VO2` (oxygen consumption in milliliters per minute per kilogram). 
+
+
+a) Perform the tasks described above with `Heart.Rate` for explanatory variable and `Mass.Specific.VO2` for response variable.  
+
+Task 1
+```{r}
+penguin_data <- read.csv(file = "Macaroni_Penguins_Green.csv", header = TRUE)
+options(digits = 2)
+cat("The mean Heart Rate (bpm) is: ")
+print(mean(penguin_data$Heart.Rate, na.rm = TRUE))
+cat("The variance of the Heart Rate (bpm) is: ")
+print(var(penguin_data$Heart.Rate, na.rm = TRUE))
+hist(penguin_data$Heart.Rate, main = "Histogram of Heart Rate", xlab = "Heart Rates (bpm)")
+options(digits = 5)
+cat("The mean number of Oxygen Consumption (mL/min/kg) is: ")
+print(mean(penguin_data$Mass.Specific.VO2, na.rm = TRUE))
+cat("The variance of Oxygen Consumption (mL/min/kg): ")
+print(var(penguin_data$Mass.Specific.VO2, na.rm = TRUE))
+hist(penguin_data$Mass.Specific.VO2, main = "Histogram of Oxygen Consumption (mL/min/kg)", xlab = "Oxygen Consumption (mL/min/kg)")
+```
+
+Task 2
+```{r}
+plot(penguin_data$Heart.Rate, penguin_data$Mass.Specific.VO2, main = "Heart Rate vs. Oxygen Consumption", xlab = "Heart Rate (bpm)", ylab = "Oxygen Concumption (mL/min/kg)")
+p_m <- 0.15
+p_b <- 2
+guess_y9 <- (p_m*penguin_data$Heart.Rate)+p_b
+lines(penguin_data$Heart.Rate, guess_y9, col = 'red')
+```
+
+Task 3
+```{r}
+p_differences <- penguin_data$Heart.Rate - guess_y9
+options(digits = 5)
+cat("The mean of the differences is: ")
+print(mean(p_differences, na.rm = TRUE))
+cat("The variance of the differences is: ")
+print(var(p_differences, na.rm = TRUE))
+cat("The sum of the squared residuals are: ")
+print(sum(p_differences^2, na.rm = TRUE))
+```
+
+Task 4
+```{r}
+plot(penguin_data$Heart.Rate, penguin_data$Mass.Specific.VO2, main = "Heart Rate vs. Oxygen Consumption", xlab = "Heart Rate (bpm)", ylab = "Oxygen Concumption (mL/min/kg)")
+p_m2 <- 0.17
+p_b2 <- -2
+guess_y10 <- (p_m2*penguin_data$Heart.Rate)+p_b2
+lines(penguin_data$Heart.Rate, guess_y10, col = 'red')
+
+p_differences2 <- penguin_data$Heart.Rate - guess_y10
+options(digits = 5)
+cat("The mean of the differences is: ")
+print(mean(p_differences2, na.rm = TRUE))
+cat("The variance of the differences is: ")
+print(var(p_differences2, na.rm = TRUE))
+cat("The sum of the squared residuals are: ")
+print(sum(p_differences2^2, na.rm = TRUE))
+```
+
+b) Restrict the data set only to penguins in group `BM` (breeding males). This can be done in different ways, but one straightforward way is to see which elements of `Group` has value `BM` and then use a *vector of indices* to restrict the explanatory and response variables to the same number of elements. For example, to select the first 10 elements of the variable HR of data frame `df` use the indexing `df$HR[1:10]`. Perform the tasks described above for this subset of the penguin data for the same two variables.
+
+Task 1
+```{r}
+options(digits = 2)
+cat("The mean Heart Rate in BM (bpm) is: ")
+print(mean(penguin_data$Heart.Rate[1:114], na.rm = TRUE))
+cat("The variance of the Heart Rate in BM (bpm) is: ")
+print(var(penguin_data$Heart.Rate[1:114], na.rm = TRUE))
+hist(penguin_data$Heart.Rate[1:114], main = "Histogram of Heart Rate in BM", xlab = "Heart Rates (bpm)")
+options(digits = 5)
+cat("The mean number of Oxygen Consumption in BM (mL/min/kg) is: ")
+print(mean(penguin_data$Mass.Specific.VO2[1:114], na.rm = TRUE))
+cat("The variance of Oxygen Consumption in BM (mL/min/kg): ")
+print(var(penguin_data$Mass.Specific.VO2[1:114], na.rm = TRUE))
+hist(penguin_data$Mass.Specific.VO2[1:114], main = "Histogram of Oxygen Consumption in BM (mL/min/kg)", xlab = "Oxygen Consumption (mL/min/kg)")
+```
+
+Task 2
+```{r}
+plot(penguin_data$Heart.Rate[1:114], penguin_data$Mass.Specific.VO2[1:114], main = "Heart Rate vs. Oxygen Consumption in BM", xlab = "Heart Rate (bpm)", ylab = "Oxygen Concumption (mL/min/kg)")
+p_m3 <- 0.25
+p_b3 <- -7
+guess_y11 <- (p_m3*penguin_data$Heart.Rate[1:114])+p_b3
+lines(penguin_data$Heart.Rate[1:114], guess_y11, col = 'red')
+```
+
+Task 3
+```{r}
+p_differences3 <- penguin_data$Heart.Rate[1:114] - guess_y11
+options(digits = 5)
+cat("The mean of the differences is: ")
+print(mean(p_differences3, na.rm = TRUE))
+cat("The variance of the differences is: ")
+print(var(p_differences3, na.rm = TRUE))
+cat("The sum of the squared residuals are: ")
+print(sum(p_differences3^2, na.rm = TRUE))
+```
+
+Task 4
+```{r}
+plot(penguin_data$Heart.Rate[1:114], penguin_data$Mass.Specific.VO2[1:114], main = "Heart Rate vs. Oxygen Consumption in BM", xlab = "Heart Rate (bpm)", ylab = "Oxygen Concumption (mL/min/kg)")
+p_m4 <- 0.24
+p_b4 <- -8
+guess_y12 <- (p_m4*penguin_data$Heart.Rate[1:114])+p_b4
+lines(penguin_data$Heart.Rate[1:114], guess_y12, col = 'red')
+
+p_differences4 <- penguin_data$Heart.Rate[1:114] - guess_y12
+options(digits = 5)
+cat("The mean of the differences is: ")
+print(mean(p_differences4, na.rm = TRUE))
+cat("The variance of the differences is: ")
+print(var(p_differences4, na.rm = TRUE))
+cat("The sum of the squared residuals are: ")
+print(sum(p_differences4^2, na.rm = TRUE))
+```
+
+
+## Part 2: Linear regression
+ 
+In the following questions, please do the following:
+1) calculate the linear regression on the indicated variables in the data set; report the slope, intercept, and coefficient of determination.
+2) plot the scatterplot and overlay the linear regression line.
+3) plot the residuals as a function of the explanatory variable; print out the mean and variance of the residuals and compare to the same statistics from Part 1.
+4) calculate the ratio of the variance of the residuals and the variance of the response variable and explain how it relates to the coefficient of determination R^2.
+ 
+1. a) Use the data from the file `kong_mutation_data.txt` and perform the tasks stated above for variable `Mutations` as a function of `PatAge` (remember to label your plots and axes!) 
+
+```{r}
+#1
+fit_mutation <- lm(Mutations ~ PatAge, data = mutations_data)
+options(digits = 3)
+cat("The intercept and slope of the best-fit line are: ")
+print(fit_mutation$coefficients)
+options(digits = 3)
+cat("The coefficient of determination is: ")
+print(summary(fit_mutation)$r.squared)
+
+#2
+plot(mutations_data$PatAge, mutations_data$Mutations, main = "Linear Regression over Mutations and Paternal Age", xlab = "Paternal Age", ylab = "Number of Mutations")
+abline(fit_mutation, col = 'red')
+
+#3
+plot(fit_mutation$model$PatAge, fit_mutation$residuals, xlab='Paternal Age', ylab='Residuals (g)')
+abline(0,0)
+cat("The mean of the residuals is: ")
+print(mean(fit_mutation$residuals))
+cat("The varience of the residuals is: ")
+print(var(fit_mutation$residuals))
+
+#4
+cat("The ratio of the varience of the residuals to the varience of the response variable is: ")
+print(var(fit_mutation$residuals)/var(mutations_data$Mutations))
+```
+
+How does the slope compare to the fit your performed by eye in question 1.1a? What does the slope of that line mean? What fraction of the variance is explained by the linear relationship? Does the plot of residuals show any significant deviations from the assumptions?
+
+The predicted slope is almost the same to the fit slope, the fit slope is only greater by 0.01. The slope of the fit line represents the generalized change between each individual unit of the graph. The fraction of the variance that is explained by the linear relationship is 0.347. The plot of the residuals does show some significant deviations from assumptions as by the visual eye some of the points stray from the residual line, but most lie near the general area of the residual line. 
+ 
+b) Perform the same tasks as above for `Mutations` as a function of `MatAge` (remember to label your plots and axes!)
+
+
+```{r}
+#1
+fit_mutation2 <- lm(Mutations ~ MatAge, data = mutations_data)
+options(digits = 3)
+cat("The intercept and slope of the best-fit line are: ")
+print(fit_mutation2$coefficients)
+options(digits = 3)
+cat("The coefficient of determination is: ")
+print(summary(fit_mutation2)$r.squared)
+
+#2
+plot(mutations_data$MatAge, mutations_data$Mutations, main = "Linear Regression over Mutations and Maternal Age", xlab = "Maternal Age", ylab = "Number of Mutations")
+abline(fit_mutation2, col = 'red')
+
+#3
+plot(fit_mutation2$model$MatAge, fit_mutation2$residuals, xlab= "Maternal Age", ylab="Residuals")
+abline(0,0)
+cat("The mean of the residuals is: ")
+print(mean(fit_mutation2$residuals))
+cat("The varience of the residuals is: ")
+print(var(fit_mutation2$residuals))
+
+#4
+cat("The ratio of the varience of the residuals to the varience of the response variable is: ")
+print(var(fit_mutation2$residuals)/var(mutations_data$Mutations))
+```
+ 
+ 
+How does the slope compare to the fit your performed by eye in question 1.1b? What does the slope of that line tell you? What fraction of the variance is explained by the linear relationship?  Does the plot of residuals show any significant deviations from the assumptions?
+  
+The predicted slope is almost the same to the fit slope, the fit slope is only less than the predicted slope 0.15. The slope of the fit line represents the generalized change between each individual unit of the graph. The fraction of the variance that is explained by the linear relationship is 0.519. The plot of the residuals does show some significant deviations from assumptions as by the visual eye some of the points stray from the residual line, but most lie near the general area of the residual line. 
+
+
+2. a) Use the data from the file `HR_data_combined.csv`and perform the tasks stated above for variables `Ex1` as a function of `Rest1` (remember to label your plots and axes!)
+
+```{r}
+#1
+fit_hr <- lm(Ex1 ~ Rest1, data = heart_rates)
+options(digits = 3)
+cat("The intercept and slope of the best-fit line are: ")
+print(fit_hr$coefficients)
+options(digits = 3)
+cat("The coefficient of determination is: ")
+print(summary(fit_hr)$r.squared)
+
+#2
+plot(heart_rates$Rest1, heart_rates$Ex1, main = "Linear Regression over Resting Heart Rate 1 and Exercising Heart Rate 1", xlab = "Resting Heart Rate 1 (bpm)", ylab = "Exercising Heart Rate 1 (bpm)")
+abline(fit_hr, col = 'red')
+
+#3
+plot(fit_hr$model$Rest1, fit_hr$residuals, xlab= "Resting Heart Rate 1", ylab="Residuals")
+abline(0,0)
+cat("The mean of the residuals is: ")
+print(mean(fit_hr$residuals))
+cat("The varience of the residuals is: ")
+print(var(fit_hr$residuals))
+
+#4
+cat("The ratio of the varience of the residuals to the varience of the response variable is: ")
+print(var(fit_hr$residuals)/var(heart_rates$Ex1))
+```
+
+How does the slope compare to the fit your performed by eye in question 1.2a? What does the slope of that line tell you? What fraction of the variance is explained by the linear relationship? Does the plot of residuals show any significant deviations from the assumptions?
+
+The predicted slope is similar to the fit slope, the fit slope is only less than the predicted slope by 0.079. The slope of the fit line represents the generalized change between each individual unit of the graph. The fraction of the variance that is explained by the linear relationship is 0.796. The plot of the residuals does show some significant deviations from assumptions as by the visual eye some of the points stray from the residual line, but most lie near the general area of the residual line.
+
+
+b) Perform the tasks stated above for variables `Rest2` as a function of `Rest1` (remember to label your plots and axes!)
+
+```{r}
+#1
+fit_hr2 <- lm(Rest2 ~ Rest1, data = heart_rates)
+options(digits = 3)
+cat("The intercept and slope of the best-fit line are: ")
+print(fit_hr2$coefficients)
+options(digits = 3)
+cat("The coefficient of determination is: ")
+print(summary(fit_hr2)$r.squared)
+
+#2
+plot(heart_rates$Rest1, heart_rates$Rest2, main = "Linear Regression over Resting Heart Rate 1 and Exercising Heart Rate 1", xlab = "Resting Heart Rate 1 (bpm)", ylab = "Resting Heart Rate 2 (bpm)")
+abline(fit_hr2, col = 'red')
+
+#3
+plot(fit_hr2$model$Rest1, fit_hr2$residuals, xlab= "Resting Heart Rate 1", ylab="Residuals")
+abline(0,0)
+cat("The mean of the residuals is: ")
+print(mean(fit_hr2$residuals))
+cat("The varience of the residuals is: ")
+print(var(fit_hr2$residuals))
+
+#4
+cat("The ratio of the varience of the residuals to the varience of the response variable is: ")
+print(var(fit_hr2$residuals)/var(heart_rates$Rest2))
+```
+
+How does the slope compare to the fit your performed by eye in question 1.2b? What does the slope of that line tell you? What fraction of the variance is explained by the linear relationship? Does the plot of residuals show any significant deviations from the assumptions?
+
+The predicted slope was very close to the fit slope, the fit slope is only greater than the predicted slope by 0.087. The slope of the fit line represents the generalized change between each individual unit of the graph. The fraction of the variance that is explained by the linear relationship is 0.366. The plot of the residuals does show some significant deviations from assumptions as by the visual eye some of the points stray from the residual line, but a vast majority lie near the general area of the residual line.
+
+3. a) Use the data from the file `Macaroni_Penguins_Green.csv` and perform the tasks stated above for variable `Mass.Specific.VO2` as a function of `Heart.Rate` (remember to label your plots and axes!) 
+
+```{r}
+#1
+fit_p <- lm(Mass.Specific.VO2 ~ Heart.Rate, data = penguin_data)
+options(digits = 3)
+cat("The intercept and slope of the best-fit line are: ")
+print(fit_p$coefficients)
+options(digits = 3)
+cat("The coefficient of determination is: ")
+print(summary(fit_p)$r.squared)
+
+#2
+plot(penguin_data$Heart.Rate, penguin_data$Mass.Specific.VO2, main = "Linear Regression over Heart Rate and Oxygen Consumption", xlab = "Heart Rate (bpm)", ylab = "Oxygen Consumption (mL/min/kg)")
+abline(fit_p, col = 'red')
+
+#3
+plot(fit_p$model$Heart.Rate, fit_p$residuals, xlab= "Heart Rate (bpm)", ylab="Residuals")
+abline(0,0)
+cat("The mean of the residuals is: ")
+print(mean(fit_p$residuals))
+cat("The varience of the residuals is: ")
+print(var(fit_p$residuals))
+
+#4
+cat("The ratio of the varience of the residuals to the varience of the response variable is: ")
+print(var(fit_p$residuals)/var(penguin_data$Mass.Specific.VO2))
+```
+
+How does the slope compare to the fit you performed by eye in question 1.3a? What does the slope of that line tell you? What fraction of the variance is explained by the linear relationship? Does the plot of residuals show any significant deviations from the assumptions?
+
+
+The predicted slope was very close to the fit slope, the fit slope is only greater than the predicted slope by 0.01. The slope of the fit line represents the generalized change between each individual unit of the graph. The fraction of the variance that is explained by the linear relationship is 0.509. The plot of the residuals does show some significant deviations from assumptions as by the visual eye some of the points stray from the residual line, but a vast majority lie near the general area of the residual line.
+
+
+b) As in part 1 question 3b, restrict the data set to penguins in group `BM` and make the same linear regression analysis as above.
+
+```{r}
+#1
+fit_p2 <- lm(Mass.Specific.VO2[1:114] ~ Heart.Rate[1:114], data = penguin_data)
+options(digits = 3)
+cat("The intercept and slope of the best-fit line are: ")
+print(fit_p2$coefficients)
+options(digits = 3)
+cat("The coefficient of determination is: ")
+print(summary(fit_p2)$r.squared)
+
+#2
+plot(penguin_data$Heart.Rate[1:114], penguin_data$Mass.Specific.VO2[1:114], main = "Linear Regression over Heart Rate and Oxygen Consumption in BM", xlab = "Heart Rate BM (bpm)", ylab = "Oxygen Consumption BM (mL/min/kg)")
+abline(fit_p2, col = 'red')
+
+#3
+plot(fit_p2$model$Heart.Rate[1:114], fit_p2$residuals, xlab= "Heart Rate (bpm) in BM", ylab="Residuals")
+abline(0,0)
+cat("The mean of the residuals is: ")
+print(mean(fit_p2$residuals))
+cat("The varience of the residuals is: ")
+print(var(fit_p2$residuals))
+
+#4
+cat("The ratio of the varience of the residuals to the varience of the response variable is: ")
+print(var(fit_p2$residuals)/var(penguin_data$Mass.Specific.VO2[1:114]))
+```
+
+How does the slope compare to the fit you performed by eye in question 1.3b? What does the slope of that line tell you? What fraction of the variance is explained by the linear relationship? Compare the fit of the restricted data set to the one obtained for all different groups of penguins.
+
+
+The predicted slope was pretty close to the fit slope, the fit slope is only greater than the predicted slope by 0.06. The slope of the fit line represents the generalized change between each individual unit of the graph. The fraction of the variance that is explained by the linear relationship is 0.24. The plot of the residuals does show some significant deviations from assumptions as by the visual eye some of the points stray from the residual line, but a vast majority lie near the general area of the residual line.
+

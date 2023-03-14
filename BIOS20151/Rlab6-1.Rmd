@@ -1,0 +1,246 @@
+---
+title: "R lab 6: hypothesis testing"
+author: "Keegan Ballantyne"
+output: html_document
+---
+
+
+### Resources for the lab
+* Read section 10.3 of the textbook to learn about the chi-squared test function
+* Read section 11.3 of the textbook to learn about logical tests and conditional
+* Work through R Tutorial 9
+
+
+## Part 1: Chi-squared test for independence
+
+In this section you will use the data set from our class survey, which you will find in the file `categorical_data.csv`. Load it using the function `read.csv()` as shown below. The data frame contains four variables: `Season`, `Tea`, `Height`, and `Continent`. The values of these variables are character strings, such as 'Summer (June-August)' and 'I like certain types sometimes'. The chunk below demonstrates how to convert the raw data into a contingency table for the variables `Tea` and `Height` using the function `table()`:
+
+```{r}
+setwd("~/Documents/CSV Files")
+library(readr)
+categorical_data <- read_csv("/Users/keeganballantyne/Documents/CSV Files/categorical_data.csv") 
+cat_data <- read.csv("categorical_data.csv")
+cat_mat <- table(cat_data$Tea, cat_data$Height)
+```
+
+
+1. Assign the table output to a data matrix and use the `chisq.test()` function to perform the chi-squared test to test the independence of the two variables `Tea` and `Height`. Report the p-value for the data set and decide whether to reject the hypothesis that height and tea drinking preference are independent at significance levels alpha = 0.05, 0.01, 0.001.
+
+```{r}
+#data matrix
+data_mat <- matrix(c(37, 62, 39, 33, 73, 45, 14, 18, 8), ncol=3, nrow=3, byrow = TRUE)
+rownames(data_mat) <- c('Yes', 'Some, not all', 'Never')
+colnames(data_mat) <- c('Tall','Medium', 'Short')
+print(data_mat)
+
+#chi-square test
+test.output <- chisq.test(data_mat)
+print(test.output)
+print(test.output$p.value)
+```
+
+p-value = 0.4643416
+
+0.05; I will fail to reject the hypothesis because 0.464 > than 0.05
+0.01; I will fail to reject the hypothesis because 0.464 > than 0.01
+0.001; I will fail to reject the hypothesis because 0.464 > than 0.001
+
+
+2. Calculate the counts for the two-way data table for variables `Height` and `Season`. Use the `chisq.test()` function to perform the chi-squared test to test the independence of the two variables `Height` and `Season`. Report the p-value for the data set and decide whether to reject the hypothesis that height and tea drinking preference are independent at significance levels alpha = 0.05, 0.01, 0.001.
+
+```{r}
+#data matrix
+data_mat <- matrix(c(27, 34, 22, 16, 34, 28, 18, 47, 27, 23, 38, 15), ncol=3, nrow=4, byrow = TRUE)
+rownames(data_mat) <- c('Autumn', 'Winter', 'Spring', 'Summer')
+colnames(data_mat) <- c('Tall','Medium', 'Short')
+print(data_mat)
+
+#chi-square test
+test.output <- chisq.test(data_mat)
+print(test.output)
+print(test.output$p.value)
+```
+
+p-value = 0.1554613
+
+0.05; I will fail to reject the hypothesis because 0.155 > than 0.05
+0.01; I will fail to reject the hypothesis because 0.155 > than 0.01
+0.001; I will fail to reject the hypothesis because 0.155 > than 0.001
+
+
+3. a) Calculate the two-way data table for the variables `Tea` and `Continent` and print it out. Use the `chisq.test()` function to perform the chi-squared test to test the independence of the two variables `Tea` and `Height`. Report the p-value for the data set and decide whether to reject the hypothesis that height and tea drinking preference are independent at significance levels alpha = 0.05, 0.01, 0.001.
+
+```{r}
+#data matrix
+data_mat <- matrix(c(119, 2, 12, 5, 130, 2, 16, 3, 38, 0, 1, 1), ncol=4, nrow=3, byrow = TRUE)
+rownames(data_mat) <- c('Yes', 'Some, not all', 'Never')
+colnames(data_mat) <- c('North America','South America', 'Asia & Oceania', 'Europe')
+print(data_mat)
+
+#chi-square test
+test.output <- chisq.test(data_mat)
+print(test.output)
+print(test.output$p.value)
+```
+
+p-value = 0.6836806
+
+0.05; I will fail to reject the hypothesis because 0.684 > than 0.05
+0.01; I will fail to reject the hypothesis because 0.684 > than 0.01
+0.001; I will fail to reject the hypothesis because 0.684 > than 0.001
+
+b) You should see that the chi-squared function returns the warning "Chi-squared approximation may be incorrect" because there are zeros in the contingency table. To fix this problem, combine the `Continent` values into two categories: 'North America' and all others, and the `Tea` values into 'Yes, all the time' and all others. You can do this by adding the logical test for equality to the table calculation and you will produce a table with counts of TRUE and FALSE values for each variable, which you can relabel if you want using the functions `rownames` and `colnames` to assign a vector of names. Use the R `chisq.test()` function to perform the chi-squared test to test the independence of the two variables. Report the p-value for the data set and decide whether to reject the hypothesis that continent and tea drinking preference are independent at significance levels alpha = 0.05, 0.01, 0.001.
+
+```{r}
+#data matrix
+data_mat <- matrix(c(119, 19, 168, 23), ncol=2, nrow=2, byrow = TRUE)
+rownames(data_mat) <- c('Yes, all the time', 'All Others')
+colnames(data_mat) <- c('North America','All Others')
+print(data_mat)
+
+#chi-square test
+test.output <- chisq.test(data_mat)
+print(test.output)
+print(test.output$p.value)
+```
+
+p-value = 0.7675263
+
+0.05; I will fail to reject the hypothesis because 0.768 > than 0.05
+0.01; I will fail to reject the hypothesis because 0.768 > than 0.01
+0.001; I will fail to reject the hypothesis because 0.768 > than 0.001
+ 
+## Part 2: Generating data for independence hypothesis testing
+
+In this section you will generate random numbers to produce a simulated 2 by 2 contingency table. Use the code provided in R Tutorial 9 to generate a random data set of numbers of people with disease for a group genotype A and for a group with genotype B.
+
+1. Generate data sets for genotype A and genotype B of 50 patients with 0.3 probability of disease for both data sets. Calculate a contingency table matrix and run a chi-squared test on it. Does the test lead to rejection for the independence hypothesis at 0.1 significance level? How about at 0.05? Based on the parameters used to generate the data sets, is the hypothesis actually true? Did the chi-squared test return the correct result or an error at each significance level?
+  
+```{r}
+#random data set
+set.seed(4)
+
+samp_size <- 50 
+dis_states <- c('genA', 'genB')
+probA <- 0.3 # probability of disease for genotype A
+probB <- 0.3 # probability of disease for genotype B
+dis_genA <- sample(dis_states, samp_size, replace = TRUE, prob = c(probA, 1-probA)) # generate a vector of disease status
+dis_genB <- sample(dis_states, samp_size, replace = TRUE, prob = c(probB, 1-probB)) # generate a vector of disease status
+
+data_vec <- c(table(dis_genA), table(dis_genB))
+data_mat <- matrix(data_vec, nrow=2, ncol=2)
+print(data_mat)
+chisq_result <- chisq.test(data_mat) # run chi-squared test
+print(chisq_result)
+print(chisq_result$p.value) # output the p-value
+```
+
+p-value = 1
+
+0.05; This will fail to reject the hypothesis because 1 > than 0.05
+0.01; This will fail to reject the hypothesis because 1 > than 0.1
+
+The null hypothesis shows whether or not the variables are independent of each other. Already, we expect that the variables are independent because the probability of both the genotypes are 0.3 from the data set. The Chi-Square Test makes the same conclusion due to the fact that it fails to reject the null hypothesis which indicates that there was no error in the chi square test.
+
+What is the null hypothesis?
+The variables we are looking at are geno and dis prob -- are they linked?
+If I change one, will it predict the change of the other?
+They are independent -- because it fails to reject the null hypothesis
+It's independent because we know the probability is 0.3 for both
+Does Chi Square test come to the correct conclusion or making an error?
+2-4
+How many errors were made?
+
+
+2. Turn the code in question 1 into a function that has the following inputs: number of patients in each group, probability of disease for genotype A, probability of disease for genotype B, which runs the chi-squared tests and return the p-value. Run the function 100 times by calling it inside a for loop  and assign the p-values to a vector (that you need to pre-allocate before the loop.) Report how many of the 100 chi-squared tests result in rejection of the null hypothesis at the 0.1 and 0.05 significance levels using a logical comparison (see tutorial on logical tests for how to do this.) Based on the parameters used to generate the data sets, how many of the test conclusions are errors for each significance level? Explain how this relates to the definition of p-value.
+
+```{r}
+#parameters for the function
+samp_size <- 50 
+probA <- 0.3
+probB <- 0.3
+
+#copy code from question 1 into function.
+func <- function(samp_size, probA, probB){
+  dis_states <- c('genA', 'genB')
+  dis_genA <- sample(dis_states, samp_size, replace = TRUE, prob = c(probA,     1-probA))
+  dis_genB <- sample(dis_states, samp_size, replace = TRUE, prob = c(probB, 1-probB))
+  data_vec <- c(table(dis_genA), table(dis_genB))
+  data_mat <- matrix(data_vec, nrow=2, ncol=2)
+  chisq_result <- chisq.test(data_mat)
+  return(chisq_result$p.value)
+}
+print(func(samp_size, probA, probB))
+
+chi_values <- (0:100)
+for(i in 1:100) {
+  chi_values[i] <- func(samp_size, probA, probB)
+}
+
+sum(chi_values < 0.1)
+sum(chi_values < 0.05)
+```
+
+92 of the conclusions fail to reject the null hypothesis based upon a logical comparison for the 0.1 threshold, and 98 of the conclusions fail to reject the null hypothesis for the 0.05 threshold. Based upon the parameters of the data, 8 of the tests represent an error when the significance threshold was 0.1 and 2 of the tests represent an error when the significance threshold was 0.05. This relates to the definition of the p-value through the idea of how it can represent the likelihood of making a type 1 error and in this data set, the p value was low according to the threshold values and there is a greater chance that we would fail to reject the hypothesis. This means that the number of errors is related to the p-value based upon it's definition since the p-value is low and the number of trials that were erroneous were also low for this data set. 
+
+3. Change the two data sets so they are different: for the first data set (with genotype A), let the probability of disease be 0.3 and for the second data set (genotype B) let disease occur with probability 0.5. Run this script again and report how many of the 100 chi-squared tests result in rejecting the null hypothesis at the 0.1 and 0.05 significance level. Based on the parameters used to generate the data sets, how many of the test conclusions are errors for each significance level? Explain how this relates to the definition of p-value.
+
+```{r}
+#parameters for the function
+samp_size <- 50 
+probA <- 0.3
+probB <- 0.5
+
+func <- function(samp_size, probA, probB){
+  dis_states <- c('genA', 'genB')
+  dis_genA <- sample(dis_states, samp_size, replace = TRUE, prob = c(probA,     1-probA))
+  dis_genB <- sample(dis_states, samp_size, replace = TRUE, prob = c(probB, 1-probB))
+  data_vec <- c(table(dis_genA), table(dis_genB))
+  data_mat <- matrix(data_vec, nrow=2, ncol=2)
+  chisq_result <- chisq.test(data_mat)
+  return(chisq_result$p.value)
+}
+print(func(samp_size, probA, probB))
+
+chi_values <- (0:100)
+for(i in 1:100) {
+  chi_values[i] <- func(samp_size, probA, probB)
+}
+
+sum(chi_values < 0.1)
+sum(chi_values < 0.05)
+```
+
+43 of the tests show a rejection of the null hypothesis based upon a logical comparison for the 0.1 threshold and 51 of the tests show a rejection of the null hypothesis based upon a logical comparison for the 0.05 threshold. Based upon the parameters of the data, 57 of the tests represent errors when the significance threshold was 0.1 and 49 of the tests represent errors when the significance threshold was 0.05. This relates to the definition of the p-value through the idea of how it can represent the likelihood of us making a type 1 error. In this data set, the likelihood of making a type 1 error would be 4% due to the p-value, so this shows that the p-value is not related to errors in the conclusions because there were many errors (at least half of the conclusions ended in errors for both the 0.1 and 0.05 threshold) in the conclusions yet the p-value was still low. 
+
+4. Finally, let's make it really easy for the chi-squared test, and generate data from very different distributions. For the first data set (with genotype A), let the probability of disease be 0.2 and for the second data set (genotype B) let disease occur with probability 0.6. Run this script again and report how many of the 100 chi-squared tests result in rejecting the null hypothesis at the 0.1 and 0.05 significance level. Based on the parameters used to generate the data sets, how many of the test conclusions are errors for each significance level? Explain how this relates to the definition of p-value.
+
+```{r}
+#parameters for the function
+samp_size <- 50 
+probA <- 0.2
+probB <- 0.6
+
+func <- function(samp_size, probA, probB){
+  dis_states <- c('genA', 'genB')
+  dis_genA <- sample(dis_states, samp_size, replace = TRUE, prob = c(probA,     1-probA))
+  dis_genB <- sample(dis_states, samp_size, replace = TRUE, prob = c(probB, 1-probB))
+  data_vec <- c(table(dis_genA), table(dis_genB))
+  data_mat <- matrix(data_vec, nrow=2, ncol=2)
+  chisq_result <- chisq.test(data_mat)
+  return(chisq_result$p.value)
+}
+print(func(samp_size, probA, probB))
+
+chi_values <- (0:100)
+for(i in 1:100) {
+  chi_values[i] <- func(samp_size, probA, probB)
+}
+
+sum(chi_values < 0.1)
+sum(chi_values < 0.05)
+
+```
+
+0 of the tests show a rejection of the null hypothesis based upon a logical comparison for the 0.1 threshold and 1 of the tests show a rejection of the null hypothesis based upon a logical comparison for the 0.05 threshold. Based upon the parameters of the data, 100 of the tests represent an error when the significance threshold was 0.1 and 99 of the tests represent an error when the significance threshold was 0.05. This relates to the definition of the p-value through the idea of how it can represent the likelihood of us making a type 1 error. In this data set, the likelihood of making a type 1 error would be very close to 0% due to the p-value, so this shows that the p-value is not related to error based upon its definition.
+

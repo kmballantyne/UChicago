@@ -1,0 +1,471 @@
+---
+title: "R lab assignment 8: Markov models"
+author: "Keegan Ballantyne"
+output: html_document
+---
+
+Before starting this assignment read chapters 14 through 15 and work through the R tutorial 10.
+
+
+## Part 1: Propagating probability vectors of a two-state SI model
+
+In this part you will generate a sequence of probability vectors, stored in a 2 by n+1 matrix  where n is the number of time steps. To calculate the next probability distribution from the previous one, use a for loop and multiply the current probability vector (the i-th column of this matrix) by the transition matrix and assign the result to the next probability vector (the i+1st column of this matrix). 
+
+Use the same SI model of an infectious epidemic introduced in lab 7 with transition probabilities of 0.2 (from S to I) and 0.5 (from I to S).
+
+1. Suppose that a person is initially healthy (that is, the probability of susceptible is 1, and the probability of infected is 0). Use matrix multiplication to calculate the probability the person is infected after 1 day and after 2 days. 
+
+```{r}
+matrix1 <- matrix(c(0.8, 0.2, 0.5, 0.5), nrow = 2)
+prob1 <- c(1, 0)
+prob1mat <- matrix(0, nrow = 2, ncol = 3)
+prob1mat[, 1] <- prob1
+
+for(i in 1:2){
+  prob1mat[, i+1] <- matrix1%*%prob1mat[, i]
+}
+print(prob1mat)
+```
+
+There is a 0.2, or 20%, chance of being infected after one day passes. There is a 0.26, or 26%, chance of being infected after two days pass.
+
+2. Change the initial probability to the person being infected (probability of susceptible is 0, probability of infected is 1). Use matrix multiplication to calculate the probability the person is infected after 1 day and after 2 days. 
+
+```{r}
+matrix1 <- matrix(c(0.8, 0.2, 0.5, 0.5), nrow = 2)
+prob2 <- c(0, 1)
+prob2mat <- matrix(0, nrow = 2, ncol = 3)
+prob2mat[, 1] <- prob2
+
+for(i in 1:2){
+  prob2mat[, i+1] <- matrix1%*%prob2mat[, i]
+}
+print(prob2mat)
+```
+
+There is a 0.5, or 50%, chance of being infected after one day passes. There is a 0.35, or 35%, chance of being infected after two days pass.
+
+3. Write a script to calculate the distribution of infected and susceptible individuals for any given number of days (use a for loop). Using the script, calculate the probability distribution vectors for 30 days, using both initial probability vectors from above, save them as matrices, and plot the probability vectors over time using barplot().
+
+```{r}
+# Matrix
+matrix1 <- matrix(c(0.8, 0.2, 0.5, 0.5), nrow = 2)
+
+# Initial Probability 1
+prob1 <- c(1, 0)
+prob1mat <- matrix(0, nrow = 2, ncol = 31)
+prob1mat[, 1] <- prob1
+
+for(i in 1:30){
+  prob1mat[, i+1] <- matrix1%*%prob1mat[, i]
+}
+print(prob1mat)
+
+# Plot Initial Probability 1
+barplot(prob1mat, 30, names.arg = 0:30, main = "S (Black) over I (Red) Population over Time (30 Days)", xlab = "Time", ylab = "Fractions", col = 1:2)
+```
+```{r}
+# Initial Probability 2
+prob2 <- c(0, 1)
+prob2mat <- matrix(0, nrow = 2, ncol = 31)
+prob2mat[, 1] <- prob2
+
+for(i in 1:30){
+  prob2mat[, i+1] <- matrix1%*%prob2mat[, i]
+}
+print(prob2mat)
+
+# Plot Initial Probability 2
+barplot(prob2mat, 30, names.arg = 0:30, main = "S (Green) over I (Blue) Population over Time (30 Days)", xlab = "Time", ylab = "Fractions", col = 3:4)
+```
+
+In the first matrix, the output colors are black and red at a fully susceptible population. The red in the graph shows the fractional probability of infected people over the course of 30 days, and the black represents the susceptible population. While the graph starts with a fully susceptible (black) population, over time the population of the infected population (red) grows until it levels out where the susceptible population is 0.7 and the infected population is 0.3 approximately after day 4.In the second matrix, the output colors are green and blue at a fully infected initial population. The blue in the graph shows the fractional probability of infected people over the course of 30 days, and the green represents the susceptible population. While the graph starts with a fully infected (blue) population, over time the population of the susceptible population (green) grows until it levels out where the susceptible population is 0.7 and the infected population is 0.3 approximately after day 4.
+
+4. Change the infection rate (transition from S to I) to 0.05, keep the recovery rate (transition from I to S) of 0.5, and assign the new values to the transition matrix. Repeat the computations in task 3 with the new transition matrix and plot the probability distributions with different initial states over time using barplot(). Describe the difference between the probability distributions based on the two initial vectors. How is their time evolution different from the distributions in task 3?
+
+```{r}
+matrix2 <- matrix(c(0.95, 0.05, 0.5, 0.5), nrow = 2)
+
+# Initial Probability 1
+prob1 <- c(1, 0)
+prob1mat <- matrix(0, nrow = 2, ncol = 31)
+prob1mat[, 1] <- prob1
+
+for(i in 1:30){
+  prob1mat[, i+1] <- matrix2%*%prob1mat[, i]
+}
+print(prob1mat)
+
+# Plot Initial Probability 1
+barplot(prob1mat, 30, names.arg = 0:30, main = "S (Cyan) over I (Magenta) Population over Time (30 Days)", xlab = "Time", ylab = "Fractions", col = 5:6)
+```
+```{r}
+# Initial Probability 2
+prob2 <- c(0, 1)
+prob2mat <- matrix(0, nrow = 2, ncol = 31)
+prob2mat[, 1] <- prob2
+
+for(i in 1:30){
+  prob2mat[, i+1] <- matrix2%*%prob2mat[, i]
+}
+print(prob2mat)
+
+# Plot Initial Probability 2
+barplot(prob2mat, 30, names.arg = 0:30, main = "S (Gold) over I (Gray) Population over Time (30 Days)", xlab = "Time", ylab = "Fractions", col = 7:8)
+```
+
+In the first matrix, the output colors are cyan and magenta at a fully susceptible population. The magenta in the graph shows the fractional probability of infected people over the course of 30 days, and the cyan represents the susceptible population. With the rates adjusted to be much lower (from 0.2 to 0.05), the population of the infected is much lower in this matrix then the previous matrix. While the graph starts with a fully susceptible (cyan) population, over time the population of the infected population (magenta) grows until it levels out where the susceptible population is 0.9 and the infected population is 0.1 approximately after day 5. In the second matrix, the output colors are gray and gold at a fully infected population. The gray in the graph shows the fractional probability of infected people over the course of 30 days, and the gold represents the susceptible population. While the graph starts with a fully infected (gray) population, over time the population of the susceptible population (gold) grows until it levels out where the susceptible population is 0.9 and the infected population is 0.1 approximately after day 5.
+
+5. Change the recovery rate (transition from I to S) to 0.125 while keeping the infection rate at 0.05, and assign the new values to the transition matrix. Repeat the computations in task 3 with the new transition matrix and plot the probability distributions with different initial states over time using barplot(). Describe the difference between the probability distributions based on the two initial vectors. How is their time evolution different from the distributions in tasks 3 and 4?
+
+```{r}
+matrix3 <- matrix(c(0.95, 0.05, 0.125, 0.875), nrow = 2)
+
+# Initial Probability 1
+prob1 <- c(1, 0)
+prob1mat <- matrix(0, nrow = 2, ncol = 31)
+prob1mat[, 1] <- prob1
+
+for(i in 1:30){
+  prob1mat[, i+1] <- matrix3%*%prob1mat[, i]
+}
+print(prob1mat)
+
+# Plot Initial Probability 1
+barplot(prob1mat, 30, names.arg = 0:30, main = "S (Purple) over I (Pink) Population over Time (30 Days)", xlab = "Time", ylab = "Fractions", col = c("purple", "pink2"))
+```
+```{r}
+# Initial Probability 2
+prob2 <- c(0, 1)
+prob2mat <- matrix(0, nrow = 2, ncol = 31)
+prob2mat[, 1] <- prob2
+
+for(i in 1:30){
+  prob2mat[, i+1] <- matrix3%*%prob2mat[, i]
+}
+print(prob2mat)
+
+# Plot Initial Probability 2
+barplot(prob2mat, 30, names.arg = 0:30, main = "S (Brown) over I (Green) Population over Time (30 Days)", xlab = "Time", ylab = "Fractions", col = c("brown", "dark green"))
+```
+
+In the first matrix, the output colors are purple and pink at a fully susceptible population. The pink in the graph shows the fractional probability of infected people over the course of 30 days, and the purple represents the susceptible population. The rates for both recovery and infection are adjusted to be much lower (0.05 for infection and 0.125 for recovery). While the graph starts with a fully susceptible (purple) population, over time the population of the infected population (pink) grows until it levels out where the susceptible population is 0.7 and the infected population is 0.3 approximately after day 19. In the second matrix, the output colors are green and brown at a fully infected population. The green in the graph shows the fractional probability of infected people over the course of 30 days, and the brown represents the susceptible population. While the graph starts with a fully infected (green) population, over time the population of the susceptible population (brown) grows until it levels out where the susceptible population is 0.7 and the infected population is 0.3 approximately after day 20.
+
+
+## Part 2: Multiple simulations of a two state Markov model
+
+In lab 7 you created a function for simulation of a two-state model that generated a state vector of health history for one individual. In this part you will copy and use that function to simulate multiple people undergoing random transitions between susceptible and infectious states. Here are the steps you will follow in all of the tasks below:
+
+* Preallocate a matrix that will contain all the states (1 or 2) for different people on different days, with the row index representing people and the column index representing days. 
+
+* Use the function from part 1 inside a for loop and assign each state string to a different row of the state matrix, representing a different person. 
+
+* Plot the histograms (frequencies of states 1 and 2) over time using the code provided in the last chunk of part 3 of the R  Tutorial 10. (The state.mat in that script will be the matrix that you calculated above.)
+
+
+1. Using transition probabilities of 0.2 (from S to I) and 0.5 (from I to S), simulate the state histories of 100 individuals for 30 days (generating 100 separate state strings), starting with all 100 individuals in state S (number 1).  Describe the behavior of the histograms over time. Does the distribution after 30 days remain the same if you run your script multiple times?
+
+```{r}
+state <- 1
+transStoI <- 0.2
+transItoS <- 0.5
+days <- 30
+inds <- 100
+matrix <- matrix(0, nrow = 100, ncol = 31)
+
+func <- function(state, transStoI, transItoS, days) {
+  state_vector <- rep(state, days)
+  for (i in 1:days)
+   
+  {
+    random <- runif(1)
+    if (state_vector[i] == 1) {
+      if (random < transStoI) {
+        state_vector[i+1] <- 2
+      } else {
+        state_vector[i+1] <- 1
+      }
+    } else {if (state_vector[i] == 2) {
+      if (random < transItoS) {
+        state_vector[i+1] <- 1
+      } else {
+        state_vector[i+1] <- 2
+      }
+    } else {
+     
+      print ("Initial State must be either 1 or 2")
+     
+    }}}
+   
+    return(state_vector)
+}
+
+for (i in 1:inds) {matrix[i, ] = func(state, transStoI, transItoS, days)
+}
+
+
+matrix2 <- matrix(0, nrow = 2, ncol = 31)
+for (i in 1:days){
+  matrix2[, i] <- tabulate(matrix[, i], nbins = 2)
+}
+
+barplot(matrix2, main = "Frequency of States vs. Time", xlab = "Time (Days)", names.arg = 1:(days+1), ylab = "State Counts", col = c("cadetblue1", "chocolate4"))
+```
+
+The histogram is varied each time it is run, and the histogram does not look the exactly the same after each run. The only thing that remains the same is the first day always being 100% susceptible (fully cyan). After day 1, there is still variation of the susceptible and infected populations where it would increase or decrease if you analyze it from a day to day basis, and they would increase or decrease at varying rates. After 30 days, the population never becomes fully susceptible again under these parameters. After running the program 10 times, the most common end result for the graph appears to be that the susceptible population is at 70% and the infected population is at 30%.
+
+2. Repeat the last task, but set the initial states of all 100 individuals to I (number 2). Again, plot the histograms (frequencies of states 1 and 2) and describe the behavior of the histogram over time.  Does the distribution of susceptible and infective look roughly the same as in the previous task after 30 days?
+
+```{r}
+state <- 2
+transStoI <- 0.2
+transItoS <- 0.5
+days <- 30
+inds <- 100
+matrix <- matrix(0, nrow = 100, ncol = 31)
+
+func <- function(state, transStoI, transItoS, days) {
+  state_vector <- rep(state, days)
+  for (i in 1:days)
+   
+  {
+    random <- runif(1)
+    if (state_vector[i] == 1) {
+      if (random < transStoI) {
+        state_vector[i+1] <- 2
+      } else {
+        state_vector[i+1] <- 1
+      }
+    } else {if (state_vector[i] == 2) {
+      if (random < transItoS) {
+        state_vector[i+1] <- 1
+      } else {
+        state_vector[i+1] <- 2
+      }
+    } else {
+     
+      print ("Initial State must be either 1 or 2")
+     
+    }}}
+   
+    return(state_vector)
+}
+
+for (i in 1:inds) {matrix[i, ] = func(state, transStoI, transItoS, days)
+}
+
+
+matrix2 <- matrix(0, nrow = 2, ncol = 31)
+for (i in 1:days){
+  matrix2[, i] <- tabulate(matrix[, i], nbins = 2)
+}
+
+barplot(matrix2, main = "Frequency of States vs. Time", xlab = "Time (Days)", names.arg = 1:(days+1), ylab = "State Counts", col = c("cadetblue1", "chocolate4"))
+```
+
+Similar to task 1, histogram is varied each time it is run, and the histogram does not look exactly the the same after each run. The main thing that is different in this graph compared to task 1 is that day 1 starts with an infected population at 100%. After day 1, the infected population decreases drastically and the susceptible population increases dramatically, but there is still variation of the susceptible and infected populations where it would increase or decrease if you analyze it from a day to day basis, and they would increase or decrease at varying rates. Like the graph in task 1, after 30 days the population never becomes fully susceptible again under these parameters. After running the program 10 times, the most common end result for the graph appears to be that the susceptible population is at 70% and the infected population is at 30% which is also similar to the graph in task 1.
+
+3. Change the infection rate (transition from S to I) to 0.05, while keeping the recovery rate at 0.5, and simulate a population of 100 individuals over 30 days, starting with everyone in the susceptible state, and plot the histograms over time. Describe the behavior of the histogram over time. Does the distribution after 30 days remain roughly the same if you run your script multiple times? Compare the time evolution of the distributions to the ones in previous tasks.
+
+```{r}
+state <- 1
+transStoI <- 0.05
+transItoS <- 0.5
+days <- 30
+inds <- 100
+matrix <- matrix(0, nrow = 100, ncol = 31)
+
+func <- function(state, transStoI, transItoS, days) {
+  state_vector <- rep(state, days)
+  for (i in 1:days)
+   
+  {
+    random <- runif(1)
+    if (state_vector[i] == 1) {
+      if (random < transStoI) {
+        state_vector[i+1] <- 2
+      } else {
+        state_vector[i+1] <- 1
+      }
+    } else {if (state_vector[i] == 2) {
+      if (random < transItoS) {
+        state_vector[i+1] <- 1
+      } else {
+        state_vector[i+1] <- 2
+      }
+    } else {
+     
+      print ("Initial State must be either 1 or 2")
+     
+    }}}
+   
+    return(state_vector)
+}
+
+for (i in 1:inds) {matrix[i, ] = func(state, transStoI, transItoS, days)
+}
+
+
+matrix2 <- matrix(0, nrow = 2, ncol = 31)
+for (i in 1:days){
+  matrix2[, i] <- tabulate(matrix[, i], nbins = 2)
+}
+
+barplot(matrix2, main = "Frequency of States vs. Time", xlab = "Time (Days)", names.arg = 1:(days+1), ylab = "State Counts", col = c("mediumvioletred", "mediumspringgreen"))
+```
+
+Similar to the graphs in tasks 1 and 2, the histogram is varied each time it is run, and the histogram does not look exactly the same after each run. The only thing that remains the same is the first day always being 100% susceptible (fully magenta) like task 1. After day 1, there is still variation of the susceptible and infected populations where it would increase or decrease if you analyze it from a day to day basis, and they would increase or decrease at varying rates. However, this graph is different because the ratio of the susceptible vs. infected population does not hover around 70% and 30% due to the infection rate decreasing from 0.5 to 0.05, so it would be less likely to be infected and the recovery rate is higher compared to the infection rate. After 30 days, the population never becomes fully susceptible again under these parameters which is similar to tasks 1 and 2. After running the program 10 times, the most common end result for the graph appears to be that the susceptible population is at 90-95%% and the infected population is at 5-10%.
+
+4. Keep the same transition probabilities as in task 3 and simulate a population of 100 individuals over 30 days, starting with everyone in the infected state, and plot the histograms over time. Describe the behavior of the histogram over time. Does the distribution after 30 days remain roughly the same if you run your script multiple times? Compare the time evolution of the distributions to the ones in previous tasks.
+
+
+```{r}
+state = 2
+transStoI = 0.05
+transItoS = 0.5
+days = 30
+inds = 100
+matrix = matrix(0, nrow = 100, ncol = 31)
+
+func <- function(state, transStoI, transItoS, days) {
+  state_vector <- rep(state, days)
+  for (i in 1:days)
+   
+  {
+    random <- runif(1)
+    if (state_vector[i] == 1) {
+      if (random < transStoI) {
+        state_vector[i+1] <- 2
+      } else {
+        state_vector[i+1] <- 1
+      }
+    } else {if (state_vector[i] == 2) {
+      if (random < transItoS) {
+        state_vector[i+1] <- 1
+      } else {
+        state_vector[i+1] <- 2
+      }
+    } else {
+     
+      print ("Initial State must be either 1 or 2")
+     
+    }}}
+   
+    return(state_vector)
+}
+
+for (i in 1:inds) {matrix[i, ] = func(state, transStoI, transItoS, days)
+}
+
+
+matrix2 = matrix(0, nrow = 2, ncol = 31)
+for (i in 1:days){
+  matrix2[, i] <- tabulate(matrix[, i], nbins = 2)
+}
+
+barplot(matrix2, main = "Frequency of States vs. Time", xlab = "Time (Days)", names.arg = 1:(days+1), ylab = "State Counts", col = c("mediumvioletred", "mediumspringgreen"))
+```
+
+Similar to the graphs in tasks 1, 2, and 3, the histogram is varied each time it is run, and the histogram does not look exactly the same after each run. The only thing that remains the same is the first day always being 100% infected (fully neon green) like task 2. After day 1, there is still variation of the susceptible and infected populations where it would increase or decrease if you analyze it from a day to day basis, and they would increase or decrease at varying rates. However, this graph is different because the ratio of the susceptible vs. infected population does not hover around 70% and 30% due to the infection rate decreasing from 0.5 to 0.05 like the graph from task 3, so it would be less likely to be infected and the recovery rate is higher compared to the infection rate. Additionally, this graph starts with a 100% infected population like the graph in task 2. After 30 days, the population never becomes fully susceptible again under these parameters which is similar to the graphs in tasks 1, 2, and 3. After running the program 10 times, the most common end result for the graph appears to be that the susceptible population is at 90-95%% and the infected population is at 5-10% like the graph in task 3.
+
+5. Change the recovery rate (transition from I to S) to 0.125 while keeping the infection rate at 0.05, and simulate a population of 100 individuals over 30 days, starting with everyone in the susceptible state, and plot the histograms over time. Describe the behavior of the histogram over time. Does the distribution after 30 days remain roughly the same if you run your script multiple times? Compao the histograms converge to the same distribution as in the previous tasks?
+
+```{r}
+state = 1
+transStoI = 0.05
+transItoS = 0.125
+days = 30
+inds = 100
+matrix = matrix(0, nrow = 100, ncol = 31)
+
+func <- function(state, transStoI, transItoS, days) {
+  state_vector <- rep(state, days)
+  for (i in 1:days)
+   
+  {
+    random <- runif(1)
+    if (state_vector[i] == 1) {
+      if (random < transStoI) {
+        state_vector[i+1] <- 2
+      } else {
+        state_vector[i+1] <- 1
+      }
+    } else {if (state_vector[i] == 2) {
+      if (random < transItoS) {
+        state_vector[i+1] <- 1
+      } else {
+        state_vector[i+1] <- 2
+      }
+    } else {
+     
+      print ("Initial State must be either 1 or 2")
+     
+    }}}
+   
+    return(state_vector)
+}
+
+for (i in 1:inds) {matrix[i, ] = func(state, transStoI, transItoS, days)
+}
+
+
+matrix2 = matrix(0, nrow = 2, ncol = 31)
+for (i in 1:days){
+  matrix2[, i] <- tabulate(matrix[, i], nbins = 2)
+}
+
+barplot(matrix2, main = "Frequency of States vs. Time", xlab = "Time (Days)", names.arg = 1:(days+1), ylab = "State Counts", col = c("royalblue1", "sandybrown"))
+```
+
+Similar to the graphs in tasks 1, 2, 3 and 4, the histogram is varied each time it is run, and the histogram does not look exactly the same after each run. The only thing that remains the same is the first day always being 100% susceptible (fully blue) like tasks 1 and 3. After day 1, there is still variation of the susceptible and infected populations where it would increase or decrease if you analyze it from a day to day basis, and they would increase or decrease at varying rates. In this graph, howver, the susceptible population slowly decreases. However, this graph is different because there is somewhat of a stable and consistent trend as time goes on after around 17-18 days. What is also different is that both the rate of infectivity and the rate of recovery are both low, which may account for the stability because when people recover they stay healthy and less likely to be infected and when people get sick they stay infected and are less likely to recover. After 30 days, the population never becomes fully susceptible again under these parameters which is similar to all the previous tasks. After running the program 10 times, the most common end result for the graph appears to be that the susceptible population is around 70% and the infected population is around 30% similar to the graphs in tasks 1 and 2.
+
+6.  Keep the same transition probabilities as in task 5 and simulate a population of 100 individuals over 30 days, starting with everyone in the infected state, and plot the histograms over time. Describe the behavior of the histogram over time. Does the distribution after 30 days remain roughly the same if you run your script multiple times? Compare the time evolution of the distributions to the ones in previous tasks.
+
+```{r}
+state = 2
+transStoI = 0.05
+transItoS = 0.125
+days = 30
+inds = 100
+matrix = matrix(0, nrow = 100, ncol = 31)
+
+func <- function(state, transStoI, transItoS, days) {
+  state_vector <- rep(state, days)
+  for (i in 1:days)
+   
+  {
+    random <- runif(1)
+    if (state_vector[i] == 1) {
+      if (random < transStoI) {
+        state_vector[i+1] <- 2
+      } else {
+        state_vector[i+1] <- 1
+      }
+    } else {if (state_vector[i] == 2) {
+      if (random < transItoS) {
+        state_vector[i+1] <- 1
+      } else {
+        state_vector[i+1] <- 2
+      }
+    } else {
+     
+      print ("Initial State must be either 1 or 2")
+     
+    }}}
+   
+    return(state_vector)
+}
+
+for (i in 1:inds) {matrix[i, ] = func(state, transStoI, transItoS, days)
+}
+
+
+matrix2 = matrix(0, nrow = 2, ncol = 31)
+for (i in 1:days){
+  matrix2[, i] <- tabulate(matrix[, i], nbins = 2)
+}
+
+barplot(matrix2, main = "Frequency of States vs. Time", xlab = "Time (Days)", names.arg = 1:(days+1), ylab = "State Counts", col = c("royalblue1", "sandybrown"))
+```
+
+Similar to the all the graphs in the previous tasks the histogram is varied each time it is run, and the histogram does not look exactly the same after each run. The only thing that remains the same is the first day always being 100% infected (fully orange) like tasks 2 and 4. After day 1, there is still variation of the susceptible and infected populations where it would increase or decrease if you analyze it from a day to day basis, and they would increase or decrease at varying rates. In this graph, however, the infected population would slowly decrease. However, this graph is different because there is somewhat of a stable and consistent trend as time goes on after around 17-18 days like the graph in task 5. What is also different is that both the rate of infectivity and the rate of recovery are both low, which may account for the stability because when people recover they stay healthy and less likely to be infected and when people get sick they stay infected and are less likely to recover like the graph in task 5. After 30 days, the population never becomes fully susceptible again under these parameters which is similar to all the previous tasks. After running the program 10 times, the most common end result for the graph appears to be that the susceptible population is around 70% and the infected population is around 30% similar to the graphs in tasks 1 and 2.

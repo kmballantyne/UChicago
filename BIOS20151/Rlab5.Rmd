@@ -1,0 +1,197 @@
+---
+title: "R lab assignment 5: random numbers and distributions"
+author: "Keegan Ballantyne"
+output: html_document
+---
+
+### Resources for the lab
+* Read section 8.3 of the textbook to learn about random number generators
+* Read section 9.3 of the textbook to see examples of plotting sample means
+* Work through R Tutorial 8
+
+## Part 1: uniform distribution
+
+We investigate the uniform distribution, which is what people often mean when they say something is “random”. Let us simulate the birth month of a person as a random number between 1 and 12, assuming birth months are uniformly distributed for people.
+
+*Important hint:* the function `hist()` does not always do a great job of dividing data into bins (e.g. it puts the 12 months into 11 bins for some reason), so you can either assign the boundaries for the bins using the option `breaks`, or else use the function `barplot()` the plot the frequencies obtained using the `table()` function on the data vector.
+
+1. Generate a random sample of birth months of 12 people using `sample()` (hint: sample with replacement) and assign it to a variable. Use the `table()` function to print out the frequencies of each month. How do the frequencies compare with the expected probabilities of each month? Calculate and report the mean and the variance of the sample and compare them to the *expected* mean and variance for the uniform distribution.
+
+```{r}
+rm(list = ls())
+set.seed(3)
+bm <- sample(1:12,12, replace = TRUE)
+table(bm)
+mean(bm)
+var(bm)
+
+meanexpect <- (12+1)/2
+print(meanexpect)
+
+varexpect <- (12^2-1^2)/12
+print(varexpect)
+```
+  
+Comparing the two is hard because the numbers constantly change but they are rarely exact or near what the mean expected mean and variance for the uniform distribution is.
+
+2. Generate a random sample of birth months of 200 people and make a histogram of the frequencies of the birth months. How do the observed frequencies compare to the expected frequencies?  Calculate and report the mean and the variance of the sample and compare them to the *expected* mean and variance for the uniform distribution. Comment on how the larger sample size changes the distribution of the sample.
+
+```{r}
+bm2 <- sample(1:12,200, replace = TRUE)
+hist(bm2, main = "Birth Months of 200 People", xlab = "Months (January - December)", ylab = "Frequency")
+
+mean(bm2)
+var(bm2)
+
+meanexpect <- (12+1)/2
+print(meanexpect)
+
+varexpect <- (12^2-1^2)/12
+print(varexpect)
+```
+  
+The mean and the variance are significantly closer to the expected values with the larger sample size. I think the larger sample size allows closer repetitions to equal value for each month.
+
+## Part 2: binomial distribution
+
+Suppose that a gene exists in a population in two versions: normal and mutant, and the mutants comprise 5% of the population. Use the binomial random number generator `rbinom()` to generate the number of mutants in of one or more samples of a specified size, and `dbinom()` to calculate the probability of different outcomes.
+
+1.  Generate a random sample of 100 numbers of mutants out of sets of 20 people using `rbinom()` and assign it to a variable (Hint: pay attention to the order of input arguments!) Report the frequencies using the `table()` function.  How many of those samples have 2 mutants? Calculate the probability of having 2 mutants out of 20 using `dbinom()` and compare it to your observation.
+
+```{r}
+s <- 100
+n <- 20
+p <- .05
+
+results <- rbinom(s, n, p)
+table(results)
+
+dbinom(2, 20, 0.05)
+
+print(sum(results == 2))
+```
+  
+There were 18 samples that had 2 mutants. The probability of having 2 mutants out of 20 was 18%, this is very similar to the observation with the larger sample size of 100 where there was an 18% chance of having 2 mutants.
+
+2. Generate 100 random numbers of mutants from sets of 200 people and visualize them by plotting a histogram. How many of those samples have 20 mutants?  Calculate the probability of having 20 mutants out of 200 using `dbinom()` and compare it to your observation. Comment on how the larger number of people in the set (parameter n in the binomial distribution) changes the probability of having 10% of mutants in a set.
+
+```{r}
+s <- 100
+n <- 200
+p <- .05
+
+muts <- rbinom(s, n, p)
+table(muts)
+
+hist(muts, main="Mutants in a Population", breaks = 0:21, xlab = "Number of Possible Mutants in a Set", ylab = "Frequency")
+
+dbinom(20, 200, 0.05)
+
+print(sum(muts == 20))
+```
+  
+0 of those samples will have mutants.The probability of having 20 mutants in a sample using dbinom was less than 1%. Using the dbinom the probability of having 20 mutants was less than 1% out of a sample size of 200. The more people in a set the less likely any single 1 amount of mutants will be significant of more than 10% especially because it is randomized. 
+
+##  Part 3: The shape of the distribution of sample means
+
+Here you will use R random number generators to create "random samples" and observe the distributions of sample means. In the following questions:
+
+a) use a for loop to assign a vector of sample means;
+b) plot a histogram of sample means;
+c) report the mean and standard deviation of the vector of sample means.
+
+*Important hint:* Remember to use the same setup for working with vectors and for loops that was described in R Tutorial 5: pre-allocate the vector, set up the for loop, and use correct indexing to assign elements of the vector inside the for loop.
+
+1. Generate 1000 samples of 20 uniform random numbers between 1 and 12 using `sample()` and save their mean values to a vector variable. Do the tasks a-c stated above. How many of sample means are more than 1 away from the expected value of the distribution?
+
+```{r}
+sample <- 1000
+sample.vec <- rep(NA, sample)
+samplesize <- 20
+for (i in 1:sample) {
+  randomsample <- sample(1:12, samplesize, replace = TRUE)
+  sample.vec[i] <- mean(randomsample)
+  
+}
+
+hist(sample.vec, main = "1000 Samples with 20 Uniform Random Numbers", xlab = "Mean", ylab = "Frequency")
+
+print(mean(sample.vec))
+print(sd(sample.vec))
+
+sum(sample.vec > 7.5 | sample.vec < 5.5)
+```
+  
+From the expected value of the distribution, 181 sample means are more than 1 away from the expected value.
+
+
+2.  Generate 1000 samples of 200 uniform random numbers between 1 and 12 using `sample()` and save their mean values to a vector variable. Do the tasks a-c stated above. How many of sample means are more than 1 away from the expected value of the distribution? Comparing the results with those in question 1, what is the effect of increasing the sample size on the distribution of sample means?
+
+
+```{r}
+sample <- 1000
+sample.vec <- rep(NA, sample)
+samplesize <- 200
+for (i in 1:sample) {
+  randomsample<- sample(1:12, samplesize, replace = TRUE)
+  sample.vec[i]<- mean(randomsample)
+  
+}
+
+hist(sample.vec, main= "1000 Samples with 200 Uniform Random Numbers", xlab = "Mean", ylab = "Frequency")
+
+print(mean(sample.vec))
+print(sd(sample.vec))
+
+sum(sample.vec > 7.5 | sample.vec < 5.5)
+```
+  
+From the expected value of the distribution, 0 sample means are more than 1 away. Increasing sample size, the standard deviation was even less than what we saw in question 1. The increase in sample size made the standard deviation smaller, which means the there was less variance in the data.
+
+
+3. Generate 1000 samples of 20 random numbers from the binomial distribution with p=0.05 (e.g. probability of a mutant) and n=100 (set of 100 individuals) and save their mean values to a vector variable. Do the tasks a-c stated above. How many of sample means are more than 1 away from the expected value of the distribution? How does the shape of the distribution compare with the one derived from the uniform random numbers?
+
+```{r}
+sample <- 1000
+sample.vec <- rep(NA, sample)
+samplesize <- 20
+
+for (i in 1:sample) {
+  randomsample <- rbinom(samplesize,100,0.05)
+  sample.vec[i] <- mean(randomsample)
+  
+}
+
+hist(sample.vec, main = "Binomial Distribution of 20 Random Numbers", xlab = "Mean", ylab = "Frequency")
+
+print(mean(sample.vec))
+print(sd(sample.vec))
+
+sum(sample.vec > 6 | sample.vec < 4)
+```
+  
+from the expected value of the distribution, 34 are more than 1 away from the expected value. Comparing the distribution to the uniform, it is a little less equally distributed but not significantly.
+
+4. Generate 1000 samples of 200 random numbers from the binomial distribution with p=0.05 and n=100 and save their mean values to a vector variable. Do the tasks a-c stated above. How many of sample means are more than 1 away from the expected value of the distribution? Comparing the results with those in question 3, what is the effect of increasing the sample size on the distribution of sample means?
+
+```{r}
+sample <- 1000
+sample.vec <- rep(NA, sample)
+samplesize <- 200
+
+
+for (i in 1:sample) {
+  randomsample <- rbinom(samplesize, 100, 0.05)
+  sample.vec[i] <- mean(randomsample)
+  
+}
+
+hist(sample.vec, main = "Binomial Distribution of 200 Random Numbers", xlab = "Mean", ylab = "Frequency")
+print(mean(sample.vec))
+print(sd(sample.vec))
+
+
+sum(sample.vec > 6 | sample.vec < 4)
+```
+  
+From the expected value of the distribution, 0 sample means are more than 1 away from the expected value. Comparing the distribution to the uniform, it is a little less equally distributed but not significantly.

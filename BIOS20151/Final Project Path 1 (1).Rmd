@@ -1,0 +1,173 @@
+---
+title: "Final project direction 1: Data analysis"
+author: "Keegan Ballantyne"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+trauma <- read_csv("trauma_dataset.csv")
+```
+
+## Summary
+
+This project direction is based on a data set of emergency medical services runs within the city of Chicago related to traumatic injury, which is loaded in the setup R chunk above. The data set was used in a recent publication (co-authored by Sam Okum): https://jamanetwork-com.proxy.uchicago.edu/journals/jamasurgery/article-abstract/2773443
+
+
+The data set contains 23 variables and over forty thousand observations from each EMS call. The variables include demographic characteristics of the patient, location of the call, etc. - these are the *explanatory variables* for the data set, while the *response variables* are the amount of time it took to respond to each call. All the variables are described in the Excel file `trauma_datadict.xlsx`.
+
+The fundamental question is to study the effect of the explanatory variables on one (or all) of the response variables, for example, does the location of the injury influence how long it takes for the EMS to arrive? Or does the race and ethnicity of the patient make a difference? 
+
+The project will consist of three steps:
+
+1) Select the explanatory and response variables
+
+2) Visualize the relationship, e.g. by making a scatterplot or a set of box plots to compare different times;
+
+3) Perform statistical analysis, e.g. a linear regression or ANOVA and make conclusions about the existence and strength of the effect.
+
+## Step 1: Variable selection
+
+To answer the fundamental question posed above, you need to select the *explanatory* variable and the *response* variable - or you may choose to combine the three response times into one by adding them together to create a single response variable. For example, you may choose the gender of the patient (`gender`) as the explanatory variable and the time from departing the scene to the hospital (`depart_dest`) as your response variable.
+
+Once you make that decision, you need to clean the data by filtering out any observations that you don't want in the analysis. For example, some patients may not have a gender recorded, so you need to filter those out before you do any analysis. 
+
+These two steps, variable selection and data filtering, are best performed using functions that are part of the `tidyverse` set of data analysis tools and I strongly recommend you learn to use them for this project (see the links in the module for resources.) The grade of *excellent* will be reserved for those who use the tidyverse for data filtering and ggplot for data visualization (see next section.)
+
+```{r}
+# Step 1: Variable selection
+
+# Explanatory Variable: raceth
+# I decided to choose this variable for my explanatory variable because I am most interested in racial disparities within our healthcare system across all levels. In fact, some of the first created EMS systems here in the United States were actually facilitated and ran by local community member within Black neighborhoods. As such, I wanted to see if there were any disparities of EMS arriving to the scene of injury between people of different races which may be implicated into the larger issue of medical racism. 
+
+# Response Variable: disp_scene
+# I decided to choose this variable for my response variable because of the recommendation from my grandfather, a retired EMT and firefighter of 28 years. In his expert opinion, the dispatch scene time is the most important time for an injured patient because it is the time where a patient may not be receiving any treatment from anyone who has any medical knowledge.
+
+# Data Filtering
+
+race_dispatch <- trauma %>%
+  select(raceth, disp_scene) %>%
+  filter(disp_scene > 0) %>%
+  filter(!is.na(disp_scene)) %>%
+  filter(raceth != "Unknown") %>%
+  filter(raceth != "Other")
+
+# Here, I also decided to filter out "Other" because this category is too vague for racial makeup. The question is what do we assume makes up "Other" or was will we include in "Other." I find that the category of other becomes a category that cannot be used properly until there are more specifics behind it.
+
+# Check for NAs
+  print(sum(is.na(race_dispatch$disp_scene)))
+```
+
+## Step 2: Data visualization
+
+Understanding and analyzing data starts with using your eyes to examine it. Depending on the type of data, different visualizations are appropriate. In this data set, some of the explanatory variables are numeric and some are categorical, while the response variables are numeric. For example, to visualize the different transit times for different gender patients, one may make barplots or violin plots for each gender. To show the relationship between numeric variables, you will make a scatterplot.
+
+Data visualization can suggest questions that you want to test, for example, are certain zipcodes more likely to experience exceptionally long response times? It may also reveal missing values or questionable observations, in which case you will want to go back to step 1 and refine your data selection or filtering.
+
+```{r}
+
+# ggplot
+
+# Box Plot
+ggplot(data = race_dispatch,
+      mapping = aes(x = raceth, y = disp_scene, fill = raceth)) +
+  geom_boxplot() +
+  labs(title = "Time of Dispatch to EMS Arrival on Scene by Race", x = "Race", y = "Time Between Dispatch and Arrival of EMS on Scene (s)")
+
+# Violin Plot
+ggplot(data = race_dispatch,
+      mapping = aes(x = raceth, y = disp_scene, fill = raceth)) +
+  geom_violin() +
+  labs(title = "Time of Dispatch to EMS Arrival on Scene by Race", x = "Race", y = "Time Between Dispatch and Arrival of EMS on Scene (s)")
+
+# I used both a violin and a box plot to visualize these results because race is a categorical variable and it cannot be used in a scatter plot. The box and violin plots help visualize the median, Q1, Q3, and the outliers.
+
+# Histogram
+  ggplot(data = race_dispatch,
+      mapping = aes(x = disp_scene, fill = raceth)) +
+  geom_histogram() +
+  labs(title = "Time of Dispatch to EMS Arrival on Scene by Race", x = "Time Between Dispatch and Arrival of EMS on Scene (s)", y = "Frequency") +
+    coord_flip()
+
+# I used a histogram to also visualize my results so that viewers can just see how many times it took the dispatch a specific amount of time to reach the scene of arrival for each race specifically as concrete numbers that we can visualize.
+
+# Summary
+ggplot(data = race_dispatch,
+      mapping = aes(x = raceth, y = disp_scene)) +
+  stat_summary(
+    fun.min = min,
+    fun.max = max,
+    fun = median
+  )+
+  labs(title = "Time of Dispatch to EMS Arrival on Scene by Race", x = "Race", y = "Time Between Dispatch and Arrival of EMS on Scene (s)")
+
+# This summary is a little bit similar to the box and whisker plot I used previously, I just wanted to show the data in a different way with the dot representing the medium.
+  
+```
+
+## Step 3: Hypothesis testing and interpretation
+
+Visualization can tell part of the story, but you also need statistical tools to quantify the strength of the effect and the uncertainty around your conclusions. In this part you'll want to state your hypothesis (e.g. the mean transit times for men and women are the same), perform a test (e.g. a t-test), and interpret the results. You will need to be clear about the assumptions of a particular test (e.g. t-test) or method (e.g. linear regression) and verify them (e.g. by checking the distribution of residuals.)
+
+Once again, you may find that you may need to change your variable selection or data filtering after you go through this part, either because you think of a different hypothesis or because you want to exclude points that have missing values or do not match the hypothesis. You may combine some values into larger categories (e.g. zip codes or ages) to make the story more clear. Be careful, however, not to do too much "fudging" of the data by slicing and dicing it just to show an effect! A result of no effect (of the explanatory variable) is a perfectly valid and informative conclusion. But you may decide to change your question or even your choice of variables, in which case go back to Part 1 and start again.
+
+```{r}
+
+## ANOVA test
+
+# Hypothesis: The mean transit times for Black, Hispanic White, and Non-Hispanic Whites are the same.
+
+# ANOVA One Way:
+anova_test <- aov(disp_scene ~ raceth, data = race_dispatch)
+summary(anova_test)
+
+# I decided to used this test because I felt that it was best suited for categorical variables as I could not conduct a linear regression because I could not conduct a scatter plot.
+
+# Taking the results at face value, the ANOVA test shows that the data results does not support rejects the null hypothesis due to the p value being extremely low. However, in this context there are a lot of outliers in the data sample, and the large data sample fails the normality assumption. This discredits the results from the ANOVA test which means that we should use a better test in the future or splice out the outliers in the data sample.
+
+# Tukey
+TukeyHSD(anova_test)
+
+# Checking for Assumptions
+require(qqplotr)
+data("race_dispatch", package = "lattice")
+
+ggplot(data = race_dispatch, 
+       mapping = aes(sample = disp_scene, fill = raceth))+
+  stat_qq_band(alpha = 0.5) +
+  stat_qq_line() +
+  stat_qq_point() +
+  facet_wrap(~ raceth) +
+  labs(x = "Quantities from the Theoretical Data", y = "Quantities from Sample Data")
+
+# This test was used to check the assumptions of the ANOVA test to make sure that the data here adheres to those assumptions based on the law of normality of large numbers. Although some of the data falls within the normal range, there is a lot of data that falls outside of the it, and this means that the assumptions within this test are not validated. The data that was used is real world data, and we could use a better test that can interpret these results. This normality assumption did not stand for very large transport time and the data is very skewed up.
+
+# Levene
+library(car)
+results <- leveneTest(disp_scene ~ raceth, race_dispatch)
+print(results)
+
+# The Levene test, similar to the qqplot, also shows that the normality assumption was violated while conducting the ANOVA analysis due to the data sample being skewed upwards which can be seen in the qqplots.
+
+```
+
+## Conclusion
+Summarize what you learned from the analysis and interpret it in terms of your expectations and prior knowledge of the city of Chicago.
+
+Conclusion:
+
+The conclusion of mt ANOVA analysis indicated that we would reject the null hypothesis at face value. However, given the data sample and both the Levene test and the qqplot, we see that the data sample is skewed upward in this context. This upwards skew shows that we failed the normality assumption in the ANOVA analysis which discredits the observed results. This upward skew was cause by a large number of outliers due to the real world data that we are observing. In the future I would use a different test that can fit this data sample better or I would conduct an analysis without the outliers. In the future, I'm expecting that the results will continue to reject the null hypothesis from a better statistical test to make sure that we do not fail any of the assumptions to it. I'm expecting these results, in a better model, to reject the null hypothesis because of Chicago's history of segregation between people of different races as well as the medical racism that exists that has severed the trust between people of color and the healthcare system. Additionally, I'm hoping that there is a more nuanced agreement or approach to the term "Other" in terms of races because I fear that "Other" is to broad and it risks the exclusion and erasure of experiences of different people from specific races like Asian-Americans, Multiracial, and Native Americans for example.  
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,375 @@
+---
+title: "R lab assignment 3: dynamic models in discrete time"
+author: "Keegan Ballantyne"
+output: html_document
+---
+
+## Resources for the lab
+* Work through Tutorial 5 to learn about for loops
+* Read chapter 5 to learn about numeric solutions of difference equations
+
+## Part 1: Numeric solutions of difference equations
+
+In this part you will calculate numeric solutions of difference equations. Use the code from Tutorial 5 as your template. Your code will be nearly identical for all the tasks, so once you get the first script to work properly, copy and paste it and modify the line in the for loop that calculates the next values. Please use descriptive names for variables and label your axes! 
+
+For each of the following questions:
+
+1. write down the difference equation for the model; 
+2. calculate the numerical solution for the model with the given initial values and for the specified time period; 
+3. plot the solution over time (create vector for time!); 
+4. describe how the solution behaves in the long term and whether it depends on the initial value (try different initial values!)
+
+
+1. The number of infected people in a population grows by 8% per day and those who become infected remain infected. If initially there are 8 infected, how many individuals will be infected in 45 days? ANSWER: about 255
+
+```{r}
+steps <- 45
+inf <- rep(1, steps+1)
+inf[1] <- 8
+for(i in 1:steps){
+  inf[i+1] <- (inf[i] * 1.08)
+}
+print(inf[steps+1])
+
+time <- 0:45
+plot(time, inf, main = "Infected Population Growth Over Time", xlab = "Time (Days)", ylab = "Population", t = "b", lwd = 3, cex.axis = 1.5, cex.lab = 1.5)
+
+steps2 <- 45
+inf2 <- rep(1, steps2+1)
+inf2[1] <- 4
+for(i in 1:steps2){
+  inf2[i+1] <- (inf2[i] * 1.08)
+}
+print(inf2[steps2+1])
+
+time2 <- 0:45
+lines(time2, inf2, t = "b", lwd = 3, col = 2)
+leg.txt <- c("N(0) = 8", "N(0) = 4")
+legend("topleft", leg.txt, cex = 1.5, col = c(1, 2), pch = 1, lty = 1, lwd = 3)
+```
+
+1.)
+N(t+1) = 1.08N(t)
+N(t) = 1.08^t(N0)
+2.)
+N(45) = 1.08^45(8)
+N(45) = 255
+3.)
+See code above.
+4.) 
+The solution goes up to infinity and it continues to increase forever for the long end behavior, and it does not depend on the initial value.
+
+
+2. Suppose bacteria in a population divide in 2 every hour and 90% of the current population dies after reproduction, not including the new offspring. If the population initially has 10 bacteria, predict how many there will be in 24 hours. ANSWER: about 98
+
+```{r}
+steps <- 24
+bac <- rep(1, steps+1)
+bac[1] <- 10
+for(i in 1:steps){
+  bac[i+1] <- (bac[i] * 1.1)
+}
+print(bac[steps+1])
+
+time <- 0:24
+plot(time, bac, main = "Bacteria Population Growth Over Time", xlab = "Time (Hours)", ylab = "Population", t = "b", lwd = 3, cex.axis = 1.5, cex.lab = 1.5, ylim = c(0,100))
+
+steps2 <- 24
+bac2 <- rep(1, steps2+1)
+bac2[1] <- 5
+for(i in 1:steps2){
+  bac2[i+1] <- (bac2[i] * 1.1)
+}
+print(bac2[steps2+1])
+
+time2 <- 0:24
+lines(time2, bac2, t = "b", lwd = 3, col = 2)
+leg.txt <- c("N(0) = 10", "N(0) = 5")
+legend("topleft", leg.txt, cex = 1.5, col = c(1, 2), pch = 1, lty = 1, lwd = 3)
+```
+
+1.)
+N(t+1) = 1.1N(t)
+N(t) = 1.1^t(N0)
+2.)
+N(24) = 1.1^24(10)
+N(24) = 98
+3.)
+See code above.
+4.)
+The solution goes up to infinity and it continues to increase forever for the long end behavior, and it does not depend on the initial value.
+
+3. In a rabbit population, each pair produces 2.2 offspring every year (i.e. 1.1 per capita) and the adults have a 0.9 annual death rate after reproduction (and assume the whole population is paired up into mating pairs.) If initially there are 60 rabbits, predict  how many there will be in 25 years. ANSWER: about 5724
+
+```{r}
+steps <- 25
+rabbits <- rep(1, steps+1)
+rabbits[1] <- 60
+for(i in 1:steps){
+  rabbits[i+1] <- (rabbits[i] * 1.2)
+}
+print(rabbits[steps+1])
+
+time <- 0:25
+plot(time, rabbits, main = "Rabbit Population Growth Over Time", xlab = "Time (Years)", ylab = "Population", t = "b", lwd = 3, cex.axis = 1.5, cex.lab = 1.5)
+
+steps2 <- 25
+rabbits2 <- rep(1, steps2+1)
+rabbits2[1] <- 40
+for(i in 1:steps2){
+  rabbits2[i+1] <- (rabbits2[i] * 1.2)
+}
+print(rabbits2[steps2+1])
+
+time2 <- 0:25
+lines(time2, rabbits2, t = "b", lwd = 3, col = 2)
+leg.txt <- c("N(0) = 60", "N(0) = 40")
+legend("topleft", leg.txt, cex = 1.5, col = c(1, 2), pch = 1, lty = 1, lwd = 3)
+```
+
+1.)
+N(t+1) = 1.2N(t)
+N(t) = 1.2^t(N0)
+2.)
+N(25) = 1.2^25(60)
+N(25) = 5724
+3.)
+See code above.
+4.) 
+The solution goes up to infinity and it continues to increase forever for the long end behavior, and it does not depend on the initial value.
+
+4. Consider the same rabbit population, but now a python that lives nearby eats exactly 1 rabbit *per month*. If initially there are 60 rabbits, predict how many there will be in 25 years. ANSWER: 60
+
+```{r}
+steps <- 25
+rabbits <- rep(1, steps+1)
+rabbits[1] <- 60
+for(i in 1:steps){
+  rabbits[i+1] <- (rabbits[i] * 1.2) - 12
+}
+print(rabbits[steps+1])
+
+time <- 0:25
+plot(time, rabbits, main = "Rabbit Population Growth Over Time w/ Python", xlab = "Time (Years)", ylab = "Population", t = "b", lwd = 3, cex.axis = 1.5, cex.lab = 1.5, ylim = c(15, 80))
+
+steps2 <- 25
+rabbits2 <- rep(1, steps2+1)
+rabbits2[1] <- 59
+for(i in 1:steps2){
+  rabbits2[i+1] <- (rabbits2[i] * 1.2) - 12
+}
+print(rabbits2[steps2+1])
+
+time2 <- 0:25
+lines(time2, rabbits2, t = "b", lwd = 3, col = 2)
+
+steps6 <- 25
+rabbits3 <- rep(1, steps6+1)
+rabbits3[1] <- 61
+for(i in 1:steps6){
+  rabbits3[i+1] <- (rabbits3[i] * 1.2) - 12
+}
+print(rabbits3[steps6+1])
+
+time3 <- 0:25
+lines(time3, rabbits3, t = "b", lwd = 3, col = 3)
+leg.txt <- c("N(0) = 60", "N(0) = 59", "N(0) = 61")
+legend("bottomleft", leg.txt, cex = 1.5, col = c(1, 2, 3), pch = 1, lty = 1, lwd = 3)
+```
+
+1.)
+N(t+1) = N(t) + 0.2N(t)
+N(t) = 1^t(N0) + 0.2^t(N0)
+2.)
+N(25) = 1^25(60) + 0.2^25(60)
+N(25) = 60
+3.)
+See code above.
+4.) 
+The solution remains at a steady state, but it decreases to zero eventually if the initial value is less than 60 and it increases to infinity if the initial value is more than 60.
+
+5. 10 fish are added to an aquarium every month, while 80% of those present survive every month and there is no reproduction. If initially there are 10 fish in the aquarium, predict how many there will be in a year. ANSWER: about 47
+
+
+```{r}
+steps <- 12
+fish <- rep(1, steps+1)
+fish[1] <- 10
+for(i in 1:steps){
+  fish[i+1] <- (fish[i] * 0.8) + 10
+}
+print(fish[steps+1])
+
+time <- 0:12
+plot(time, fish, main = "Fish Population Growth Over Time", xlab = "Time (Years)", ylab = "Population", t = "b", lwd = 3, cex.axis = 1.5, cex.lab = 1.5,)
+
+steps2 <- 12
+fish2 <- rep(1, steps2+1)
+fish2[1] <- 15
+for(i in 1:steps2){
+  fish2[i+1] <- (fish2[i] * 0.8) + 10
+}
+print(fish2[steps2+1])
+
+time2 <- 0:12
+lines(time2, fish2, t = "b", lwd = 3, col = 2)
+leg.txt <- c("N(0) = 10", "N(0) = 15")
+legend("bottomright", leg.txt, cex = 1.5, col = c(1, 2), pch = 1, lty = 1, lwd = 3)
+
+```
+
+
+1.)
+N(t+1) = 0.8N(t) + 10t????
+N(t) = 0.8^t(N0) + 10t????
+2.)
+N(12) = 0.8^12(10)
+N(12)
+3.)
+See code above.
+4.) 
+The solution goes up to a specific asymptope at around 47, and it does not depend on the initial value.
+
+## Part 2: discrete time model with changing time step
+
+Here we will explore the effect of changing the step size on the solution of a discrete time dynamic model. We will use a very simple model of bacterial population growth, in which we assume that bacteria divide once an hour and there are no deaths.
+
+1. Calculate the solution for this population, assuming that all bacteria divide exactly once an hour - in other words, a birth rate of one per individual. Starting with one bacterium use a for loop to calculate the solution for 10 hours and print out the last value.
+
+```{r}
+steps <- 10
+bacteria <- rep(1, steps+1)
+bacteria[1] <- 1
+for(i in 1:steps){
+  bacteria[i+1] <- (bacteria[i] * 2)
+}
+print(bacteria[steps+1])
+```
+
+2. Suppose that these bacteria can divide twice an hour, but only half of the population divides each time - in other words, a per capita birth rate of 0.5 per half an hour. Change your model so it calculates a solution vector with the time step of 30 minutes over 10 hours, print out the number of bacteria after 10 hours and compare it with the previous value.
+
+```{r}
+steps <- 20
+bacteria <- rep(1, steps+1)
+bacteria[1] <- 1
+for(i in 1:steps){
+  bacteria[i+1] <- (bacteria[i] * 1.5)
+}
+print(bacteria[steps+1])
+
+# This population is drastically larger than the previous value and it is more than triple the previous value.
+```
+
+
+
+3. Suppose that these bacteria divide every 15 minutes, but only one quarter of the population divides each time - in other words, a per capita birth rate of 0.25 per quarter hour. Change your model so it calculates a solution vector with the time step of 15 minutes over 10 hours, print out the number of bacteria after 10 hours and compare it with the previous value.
+
+```{r}
+steps <- 40
+bacteria <- rep(1, steps+1)
+bacteria[1] <- 1
+for(i in 1:steps){
+  bacteria[i+1] <- (bacteria[i] * 1.25)
+}
+print(bacteria[steps+1])
+
+# This population is drastically larger than the previous value and it is more than double the previous value.
+```
+
+
+
+4. Suppose that these bacteria divide every 1 minute, but only 1/60 of the population divides each time - in other words, a per capita birth rate of 1/60 per minute. Change your model so it calculates a solution vector with the time step of 1 minute over 10 hours, print out the number of bacteria after 10 hours and compare it with the previous value.
+
+```{r}
+steps <- 600
+bacteria <- rep(1, steps+1)
+bacteria[1] <- 1
+for(i in 1:steps){
+  bacteria[i+1] <- (bacteria[i] * (1+(1/60)))
+}
+print(bacteria[steps+1])
+
+# This population is drastically larger than the previous value and it is larger by almost more than 15,000.
+```
+
+
+5. Suppose that these bacteria divide every second, but only 1/3600 of the population divides each time - in other words, a per capita birth rate of 1/3600 per second. Change your model so it calculates a solution vector with the time step of 1 second over 10 hours, print out the number of bacteria after 10 hours and compare it with the previous value.
+
+```{r}
+steps <- 36000
+bacteria <- rep(1, steps+1)
+bacteria[1] <- 1
+for(i in 1:steps){
+  bacteria[i+1] <- (bacteria[i] * (1+(1/3600)))
+}
+print(bacteria[steps+1])
+
+# This population is not drastically larger than the previous value but it is larger by more than 1,500.
+```
+
+6. Produce a plot of the five solutions of bacterial population dividing with different time steps. Take the five code chunks from above, and copy them all into the chunk below. For each calculation add a time vector that corresponds to each time step (e.g. one for every hour for the first one, one for every second for the last one) and make a plot of each of the solutions as function of time on the same plot - use plot() for the first one and lines() for all the rest, with different colors and add a legend indicating different time steps.
+
+```{r}
+steps <- 10
+bacteria <- rep(1, steps+1)
+bacteria[1] <- 1
+for(i in 1:steps){
+  bacteria[i+1] <- (bacteria[i] * 2)
+}
+print(bacteria[steps+1])
+
+time_a <- seq(0,10,1)
+
+steps2 <- 20
+bacteria2 <- rep(1, steps2+1)
+bacteria2[1] <- 1
+for(i in 1:steps2){
+  bacteria2[i+1] <- (bacteria2[i] * 1.5)
+}
+print(bacteria2[steps2+1])
+
+time_b <- seq(0,10,0.5)
+
+steps3 <- 40
+bacteria3 <- rep(1, steps3+1)
+bacteria3[1] <- 1
+for(i in 1:steps3){
+  bacteria3[i+1] <- (bacteria3[i] * 1.25)
+}
+print(bacteria3[steps3+1])
+
+time_c <- seq(0,10,.25)
+
+steps4 <- 600
+bacteria4 <- rep(1, steps4+1)
+bacteria4[1] <- 1
+for(i in 1:steps4){
+  bacteria4[i+1] <- (bacteria4[i] * (1+(1/60)))
+}
+print(bacteria4[steps4+1])
+
+time_d <- seq(0,10,(1/60))
+
+steps5 <- 36000
+bacteria5 <- rep(1, steps5+1)
+bacteria5[1] <- 1
+for(i in 1:steps5){
+  bacteria5[i+1] <- (bacteria5[i] * (1+(1/3600)))
+}
+print(bacteria5[steps5+1])
+
+time_e <- seq(0,10,(1/3600))
+
+plot(time_a, bacteria, main = "Bacteria Population Growth Over Time", xlab = "Time", ylab = "Population", t = "l", lwd = 1, cex.axis = 1.5, cex.lab = 1.5, ylim = c(0, 22000))
+
+lines(time_b, bacteria2, lwd = 1, col = 2)
+
+lines(time_c, bacteria3, lwd = 1, col = 3)
+
+lines(time_d, bacteria4, lwd = 1, col = 4)
+
+lines(time_e, bacteria5, lwd = 1, col = 5)
+
+leg.txt <- c("Every Hour", "Every Half-Hour", "Every Quarter-Hour", "Every Minute", "Every Second")
+legend("topleft", leg.txt, cex = 1, col = c(1, 2, 3, 4, 5), pch = 1, lty = 1, lwd = 3)
+```

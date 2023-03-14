@@ -1,0 +1,283 @@
+---
+title: "R lab assignment 4: graphical analysis of ODEs"
+author: "Keegan Ballantyne"
+output: html_document
+---
+
+```{r, include=FALSE}
+library(deSolve)
+```
+
+
+## Resources for the lab:
+* read chapter 6
+* Work through R Tutorial 7
+
+## Part 1: Logistic population model
+
+This is the logistic model of population growth, with P representing population size, r is the growth rate parameter, and K is the carrying capacity parameter; P is measured in thousands, and time is measured in years.
+$$ \frac{dP}{dt} = rP(1-P/K) $$
+
+1. a) Using the function `pop_funk` in Tutorial 7 as a template, define a function that corresponds to the logistic model above. For the values of r=0.02 and K=300, plot the graph of the defining function (right-hand side of the ODE) in R over some interval that includes all zeros of the function. Based on the graph, find the equilibria of the ODE, determine their stability, and predict the behavior of the solution for the following initial values: P(0) = 10; P(0) = 200; P(0) = 500.
+
+```{r}
+pop_funk <- function(t, P, parms){
+  r <- parms[1]
+  K <- parms[2]
+  dPdt <- (r*P)*(1-P/K)
+  list(dPdt)
+}
+r <- 0.02
+K <- 300
+parms <- c(r, K)
+P <- seq(-500, 500, 0.5)
+time <- seq(0,10,0.1)
+dPdt <- pop_funk(time, P, parms)
+plot(P, dPdt[[1]], type = "l", lwd = 2, xlab = "P", ylab = "dP/dt")
+abline(0,0)
+```
+The two equilibrium for this particular ODE are 0 and 300. O is unstable and 300 is stable. P(0)= 10 solution behavior increases until it eventually reaches 300 as would P(0)=200. P(500) decreases to 300.
+
+b) Use the function `ode` from `deSolve` package to calculate the numeric solution of the logistic ODE for any given values of parameters r and K. Use parameters r=0.02 and K=300 and the following initial values: P(0) = 10; P(0) = 200; P(0) = 500. Calculate the numerical solutions of the ODE over a sufficiently large time time interval to observe convergence, and plot all three in the same figure. Are the solution plots consistent with your prediction in question a?
+
+```{r}
+times <- seq(0, 600, 0.1)
+init <- c(P = 10)
+output <- as.data.frame(ode( func = pop_funk, y = init, times = times, parms = parms))
+plot(P ~ time, data = output, t = "l", ylim = c(-95, 1000))
+init <- c(P = 200)
+output <- as.data.frame(ode( func = pop_funk, y = init, times = times, parms = parms))
+lines(P ~ time, data = output, ylim = c(-5, 1000), col = "cyan")
+init <- c(P = 500)
+output <- as.data.frame(ode( func = pop_funk, y = init, times = times, parms = parms))
+lines(P ~ time, data = output, col = "red")
+abline(300, 0, lty = 2)
+abline(0, 0, lty = 2)
+
+legend("topright", col = c("black", "red", "cyan"), legend = c("N(0) = 10", "N(0) = 200", "N(0) = 500" ), lty = 1, pch = NA)
+```
+
+The predictions were consistent with part A.
+  
+2. For the values of the parameters r=0.2 and K=60, plot the graph of the defining function (right-hand side of the ODE) in R over some interval that includes all zeros of the function. Based on the graph, find the equilibria of the ODE, determine their stability, and predict the behavior of the solution for the following initial values: P(0) = 10; P(0) = 50; P(0) = 150.
+
+```{r}
+pop_funk <- function(t, P, parms){
+  r <- parms[1]
+  K <- parms[2]
+  dPdt <- (r*P)*(1-P/K)
+  list(dPdt)
+}
+r <- 0.2
+K <- 60
+parms <- c(r, K)
+P <- seq(-50, 150, 0.5)
+time <- seq(0,10,0.1)
+dPdt <- pop_funk(time, P, parms)
+plot(P, dPdt[[1]], type = "l", lwd = 2, xlab = "P", ylab = "dP/dt")
+abline(0,0)
+```
+
+The two equilibrium of the graph are now 0 and 60. P(0) = 10 and P(0) = 50 increases until the fixed point of 60, and P(0) = 150 decreases to the fixed point of 60. 60 is stable, and 0 is unstable.
+  
+  
+b) Use the function `ode` from `deSolve` package to calculate the numeric solution of the logistic ODE for any given values of parameters r and K. Use parameters r=0.2 and K=60 and the following initial values: P(0) = 10; P(0) = 50; P(0) = 150. Calculate the numerical solutions of the ODE over a sufficiently large time time interval to observe convergence, and plot all three in the same figure. Are the solution plots consistent with your prediction in question a? What is the effect of different parameters r and K compared with solutions in question 1?
+
+```{r}
+times <- seq(0, 100, 0.1)
+init <- c(P = 10)
+output <- as.data.frame(ode( func = pop_funk, y = init, times = times, parms = parms))
+plot(P ~ time, data = output, t = "l", ylim = c(-5, 200))
+init <- c(P = 50)
+output <- as.data.frame(ode( func = pop_funk, y = init, times = times, parms = parms))
+lines(P ~ time, data = output, ylim = c(-5, 1000), col = "cyan")
+init <- c(P = 150)
+output <- as.data.frame(ode( func = pop_funk, y = init, times = times, parms = parms))
+lines(P ~ time, data = output, col = "red")
+abline(60, 0, lty = 2)
+abline(0, 0, lty = 2)
+
+legend("topright", col = c("black", "red", "cyan"), legend = c("N(0) = 10", "N(0) = 50", "N(0) = 150" ), lty = 1, pch = NA)
+```
+
+The predictions are consistent with part B. The different parameters changed the graph slightly therefore changing the stable point where the initial conditions are increasing or decreasing towards.
+
+## Part 2: SIS model of infectious disease
+
+The following ODE is a simple model of an infectious epidemic with only two kinds of individuals: susceptible and infected, and where the total population size stays the same.  The variable I is the fraction of individuals in the population who are infected, and the parameters beta and gamma are the infection and recovery rates, respectively; time is measured in days.
+$$ \frac{dI}{dt} = \beta I(1-I) - \gamma I $$
+
+1. a) Using the function `pop_funk` in Tutorial 7 as a template, define a function that corresponds to the SIS model above. For the values of beta = 0.45 and gamma=0.15 plot the graph of the defining function (right-hand side of the ODE) in R over the interval [0,1]. Based on the graph, find the equilibria of the ODE, determine their stability, and predict the behavior of the solution for the following initial values: I(0) = 0.1; I(0) = 0.5; I(0) = 0.9.
+
+```{r}
+pop_funk_2 <- function(t, I, parms){
+  b <- parms[1]
+  g <- parms[2]
+  c <- parms[3]
+  dIdt <- (b*I)*(C-I)-(g*I)
+  list(dIdt)
+}
+b <- 0.45
+g <- 0.15
+C <- 1
+parms <- c(b, g, C)
+I <- seq(0, 1, 0.01)
+time <- seq(0,10,0.1)
+dIdt <- pop_funk_2(time, I, parms)
+plot(I, dIdt[[1]], type = "l", lwd = 2, xlab = "I", ylab = "dI/dt")
+abline(0,0)
+```
+
+The two equilibrium for this ODE are 0 and 0.67. 0.67 is stable and 0 is unstable. P(0) = 0.1 and P(0) = 0.5 increases to 0.67 and P(0) = 0.9 decreases to 0.67.
+
+
+b) Use the function `ode` from `deSolve` package to calculate the numeric solution of the SIS ODE for any given values of parameters beta and gamma. Use parameters beta=0.45 and gamma=0.15 and the following initial values: I(0) = 0.1; I(0) = 0.5; I(0) = 0.9. Calculate the numeric solutions of the ODE over a sufficiently large time time interval to observe convergence, and plot all three in the same figure, labeled with a legend. Report whether the epidemic persists (fraction of infected remains positive) or burns out (converges to zero), whether it depends on the initial value, and comment on whether the solution dynamics agrees with your prediction in question a.
+
+```{r}
+times <- seq(0, 100, 0.1)
+init <- c(P = 0.1)
+output <- as.data.frame(ode( func = pop_funk_2, y = init, times = times, parms = parms))
+plot(P ~ time, data = output, t = "l", ylim = c(0, 1))
+init <- c(P = 0.5)
+output <- as.data.frame(ode( func = pop_funk_2, y = init, times = times, parms = parms))
+lines(P ~ time, data = output, ylim = c(0, 1), col = "cyan")
+init <- c(P = 0.9)
+output <- as.data.frame(ode( func = pop_funk_2, y = init, times = times, parms = parms))
+lines(P ~ time, data = output, col = "red")
+abline(0, 0, lty = 2)
+
+legend("bottomright", col = c("black", "red", "cyan"), legend = c("I(0) = 0.1", "I(0) = 0.5", "I(0) = 0.9"), lty = 1, pch = NA)
+```
+
+The prediction is consistent part A. Apparently the remaining infected never flattens out to 0 as it converges to 0.67 from both sides because of the stability of the fixed point.
+
+  
+2. a) For the values of beta=0.1 and gamma=0.3 plot the graph of the defining function (right-hand side of the ODE) in R over the interval [0,1]. Based on the graph, find the equilibria of the ODE, determine their stability, and predict the behavior of the solution for the following initial values: I(0) = 0.1; I(0) = 0.5; I(0) = 0.9.
+
+```{r}
+pop_funk_2 <- function(t, I, parms){
+  b <- parms[1]
+  g <- parms[2]
+  dIdt <- (b*I)*(1-I)-(g*I)
+  list(dIdt)
+}
+b <- 0.1
+g <- 0.3
+parms <- c(b, g, C)
+I <- seq(0, 1, 0.01)
+time <- seq(0,10,0.1)
+dIdt <- pop_funk_2(time, I, parms)
+plot(I, dIdt[[1]], type = "l", lwd = 2, xlab = "I", ylab = "dI/dt")
+abline(0,0)
+```
+  
+The one equilibrium is 0, and this equilibrium is unstable. Additionally, all of the initial values decreases to 0.
+
+  
+  
+b) Use the function `ode` from `deSolve` package to calculate the numeric solution of the SIS ODE for any given values of parameters beta and gamma. Use parameters beta=0.1 and gamma=0.3 and the following initial values: I(0) = 0.1; I(0) = 0.5; I(0) = 0.9. Calculate the numeric solutions of the ODE over a sufficiently large time time interval to observe convergence, and plot all three in the same figure, labeled with a legend. Report whether the epidemic persists (fraction of infected remains positive) or burns out (converges to zero), whether it depends on the initial value, and comment on whether the solution dynamics agrees with your prediction in question a.
+
+```{r}
+times <- seq(0, 100, 0.1)
+init <- c(P = 0.1)
+output <- as.data.frame(ode( func = pop_funk_2, y = init, times = times, parms = parms))
+plot(P ~ times, data = output, t = "l", ylim = c(0, 1))
+init <- c(P = 0.5)
+output <- as.data.frame(ode( func = pop_funk_2, y = init, times = times, parms = parms))
+lines(P ~ times, data = output, ylim = c(0, 1), col = "cyan")
+init <- c(P = 0.9)
+output <- as.data.frame(ode( func = pop_funk_2, y = init, times = times, parms = parms))
+lines(P ~ times, data = output, col = "red")
+abline(0, 0, lty = 2)
+
+legend("topright", col = c("black", "red", "cyan"), legend = c("I(0) = 0.1", "I(0) = 0.5", "I(0) = 0.9"), lty = 1, pch = NA)
+```
+
+The prediction is consistent with part A. The fraction of the infected eventually converges to 0 with all values because the only point of equilibrium is 0. This equilibrium is unstable due to fact that the population can never really be less than 0.
+
+  
+3. a) Let beta=0.1 and gamma=0.3, and make a plot of the numeric solution with I(0)=0.9 using the same script as above. Progressively decrease the value of the recovery rate gamma and look at the solution to see whether the the outbreak burns out (I converges to zero) or persists (I remains above zero for all time). Report the critical value of gamma which divides the two scenarios (above which outbreak burns out, and below it persists). Produce a plot showing the different behavior on either side of the critical value. HINT: use a long time vector to make sure you observe the long-term behavior of the solutions.
+
+```{r}
+b <- 0.1
+g <- 0.3
+parms <- c(b, g)
+times <- seq(0, 200, 0.1)
+init <- c(P = 0.9)
+output <- as.data.frame(ode(func = pop_funk_2, y = init, times = times, parms = parms))
+plot(P ~ times, data = output, t = "l", ylim = c(0, 1), col = "red")
+
+
+b <- 0.1
+g <- 0.2
+parms <- c(b, g)
+
+init <- c(P = 0.9)
+output <- as.data.frame(ode(func = pop_funk_2, y = init, times = times, parms = parms))
+lines(P ~ times, data = output, col = "cyan")
+
+
+b <- 0.1
+g <- 0.1
+parms <- c(b, g)
+times <- seq(0, 10, 0.1)
+init <- c(P = 0.9)
+output <- as.data.frame(ode(func = pop_funk_2, y = init, times = times, parms = parms))
+lines(P ~ times, data = output, col = "green")
+
+
+b <- 0.1
+g <- 0.05
+parms <- c(b, g)
+times <- seq(0, 10, 0.1)
+init <- c(P = 0.9)
+output <- as.data.frame(ode(func = pop_funk_2, y = init, times = times, parms = parms))
+lines(P ~ times, data = output, col = "magenta")
+
+legend("topright", legend = c("g = 0.3", "g = 0.2", "g = 0.1", "g = 0.05"), col = c("red", "blue","green", "magenta"), lty=1, pch = NA)
+```
+
+The population stops decreasing and converging to 0 at 0.1.
+
+b) Let beta=0.1 and gamma=0.3, and make a plot of the numeric solution with I(0)=0.5 using the same script as above. Progressively increase the infection rate beta and report what happens to the equilibrium fraction of infected people. Produce a plot showing the solutions for several values of beta to illustrate the trend. Does I ever reach 1 (everyone infected)?
+
+```{r}
+b <- 0.1
+g <- 0.3
+parms <- c(b, g)
+times <- seq(0, 200, 0.1)
+init <- c(P = 0.9)
+output <- as.data.frame(ode(func = pop_funk_2, y = init, times = times, parms = parms))
+plot(P ~ times, data = output, t = "l", ylim = c(0, 1), col = "red")
+
+
+b <- 0.2
+g <- 0.3
+parms <- c(b, g)
+
+init <- c(P = 0.9)
+output <- as.data.frame(ode(func = pop_funk_2, y = init, times = times, parms = parms))
+lines(P ~ times, data = output, col = "cyan")
+
+
+b <- 0.4
+g <- 0.3
+parms <- c(b, g)
+times <- seq(0, 200, 0.1)
+init <- c(P = 0.9)
+output <- as.data.frame(ode(func = pop_funk_2, y = init, times = times, parms = parms))
+lines(P ~ times, data = output, col = "green")
+
+
+b <- 2
+g <- 0.3
+parms <- c(b, g)
+times <- seq(0, 200, 0.1)
+init <- c(P = 0.9)
+output <- as.data.frame(ode(func = pop_funk_2, y = init, times = times, parms = parms))
+lines(P ~ time, data = output, col = "magenta")
+
+legend("topright", legend = c("b = 0.1", "b = 0.2", "b = 0.4", "b = 2"), col = c("red", "blue","green", "magenta"), lty=1, pch = NA)
+```
+
+This will never reach to 1. The slope and 0 are both unstable fixed points which means that it is extremely hard for everyone to become infected.
