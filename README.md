@@ -3,6 +3,8 @@ UChicago repository for all coding demos, labs, projects, and assignments comple
 
 Programming Languages include R, Python, and Jupyter Notebook
 
+This will be updated quarterly
+
 Courses include:
 - BIOS 20151: Introduction to Quantitative Modeling in Biology
 - BIOS 20153: Fundamentals of Ecology and Evolution
