@@ -3,6 +3,8 @@ UChicago repository for all coding demos, labs, projects, and assignments comple
 
 Programming Languages include R, Python, and Jupyter Notebook
 
+Some of the files may not be completed because they were dropped, not assigned for a grade, or supplemental assignments
+
 This will be updated quarterly
 
 Courses include:
