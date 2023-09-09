@@ -1,0 +1,549 @@
+---
+title: "Bicoid Gradient Lab"
+author: "Keegan Ballantyne"
+date: "5/12/2022"
+output: html_document
+---
+
+```{r}
+rm(list=ls()) # Clearing Global Environment
+
+Hb<-function(){
+  hunchback<-Hbmax*bicoid()^n/(bicoid()^n+Khalf^n)
+  return(hunchback)
+}
+
+kruppel<-function(){
+  kr<-(B0*Hb()^m/(Hb()^m+kact^m))*(kinh^p/(Hb()^p+kinh^p))
+  return(kr)
+}
+
+
+
+```
+
+```{r}
+# Part 1 
+# Solving steady state equations for bicoid gradient
+# State state equation function
+bicoid<-function(){
+  co<-jo/sqrt(D*k)   # Beginning rate
+  lambda<-sqrt(D/k)
+  concen<-co*exp(-x/lambda)
+  return(concen)
+}
+```
+
+```{r}
+# Parts 1.1 & 1.2
+# Defining parameters
+jo <- 1        # source flux
+k <- 0.01      # degradation rate
+D <- 10        # diffusivity, diffusion constant, (uM^2/sec)
+L <- 100       # length of cell (uM)
+
+x <- seq(0,L)
+
+# Creating Plot  
+plot(x/L,bicoid(),type="l",col=c(1),xlim=c(0.0,1),ylim=c(0.0,3.5),xlab="position",ylab="Concentration (a.u)",main="Steady State Solution of Bicoid concentration vs. length")
+abline(h=1,col=c(2),lty=2)
+legend("topright", inset=0.05, c("Bicoid","Threshold"), fill=c(1,2))
+
+# Looking at the graph there's an exponential decay of the bicoid [] over the normalized length of the cell. This spread of bicoid [] controls the expression of gap genes throughout the cell. This spread happens because higher concentrations of the bicoid protein appear at the anterior end of the embryo body plane and then eventually decreases moving further to the opposite posterior side. This is likely caused by maternal RNA being deposited and remaining on the anterior side of the egg.
+
+# The threshold at 1 indicates the concentration of bicoid proteins causing different changes in the body plan. Under 1 concentration (a.u.), kruppel expression becomes possible. Alternatively above 1 concentration (a.u.) hunchback expression becomes possible. This occurs at ~0.37 uM in the embryo, a little more than a thrid of the way down. Assuming a fixed threshold, a different variable like the slope of the line can be used to alter the change in pattern formation.
+```
+
+
+```{r}
+# Parts 1.3 & 1.4 -- Part A
+
+# Defining parameters
+#jo <- 1        # source flux
+jo_1 <- c(1,3,6,9)
+k <- 0.01      # degradation rate
+D <- 10        # diffusivity, diffusion constant, uM^2/sec
+L <- 100       # length of cell uM
+
+x <- seq(0,L)
+
+# Creating Plots
+# Add a new title and x and y labels
+plot(0, 0, main="Bicoid Change Flux", xlab="Position", ylab="Concentration", xlim=c(0.0,1), ylim=c(0.0,30), type="n")
+for (i in 1:length(jo_1)){
+  jo <- jo_1[i]
+  lines(x/L, bicoid(), col=c(i))
+}
+# Figure out units for source flux and add to legend
+legend("topright", inset=0.05, legend = jo_1, fill=c(1:length(jo_1)))
+abline(h=5, col=c(5), lty=2)
+abline(h=15, col=c(5), lty=2)
+
+```
+
+
+```{r}
+# Parts 1.3 & 1.4 -- Part B 
+
+# Defining parameters
+jo<-1        # source flux
+k<-0.01      # degradation rate
+#D<-10       # diffusivity, diffusion constant, uM^2/sec
+L<-100       # length of cell uM
+x<-seq(0,L)
+
+# Creating Plots
+# Add a new title and x and y labels
+plot(0, 0, main="Bicoid Change Diffusivity", xlab="Position", ylab="Concentration", xlim=c(0.0, 1), ylim=c(0.0, 3.5))
+for (i in 1:3){
+  D <- i*10
+  lines(x/L, bicoid(), col=c(i))
+}
+# Figure out units for source flux and add to legend
+abline(h=0.5, col=c(4), lty=2)
+abline(h=1.5, col=c(4), lty=2)
+legend("topright", inset=0.05, c("D=10","D=20","D=30","Threshold"), fill=c(1,2,3,4))
+
+```
+
+
+```{r}
+# Parts 1.3 & 1.4 -- Part C
+
+# Defining parameters
+jo<-1        # source flux
+#k<-0.01      # degradation rate
+D<-10        # diffusivity, diffusion constant, uM^2/sec
+L<-100       # length of cell uM
+x<-seq(0,L)
+
+# Creating Plots
+# Add a new title and x and y labels
+plot(0,0,main="Bicoid Change & Degradation Rate", xlab="Position", ylab="Concentration", xlim=c(0.0,1), ylim=c(0.0,3))
+for (i in 1:3){
+  k<-i*0.01
+  lines(x/L,bicoid(),col=c(i))
+}
+# Figure out units for degradation rate and add to legend
+abline(h=0.5,col=c(4),lty=2)
+abline(h=1.0,col=c(4),lty=2)
+legend("topright",inset=0.05,c("k=0.01","k=0.02","k=0.03","Threshold"),fill=c(1,2,3,4))
+
+#3. Increasing flux, the initial [] increases at position 0 uM, and the slope is less steep. It doesn't reach a concentration of 0 as quickly and remains for longer positions. 
+
+# For diffusivity, the higher diffusivity rate has the highest initial concentration, but it’s slope is much steeper than others, meaning the concentration decreases faster over the position than at lowered diffusivity rates. For varying degradation rates, the lower degradation rate allows for higher initial concentration at position 0 uM.
+
+#4. Based on the two threshold levels chosen, for higher flux values the threshold value increases position, while for lower threshold values the threshold value decreases position along the AP axis. 
+
+#On the other hand, the diffusivity values after 10 have similar positions of around 0.7 uM at the lower of the threshold values, but decrease along the AP axis at lower diffusivity rates. Conversely, the oppoaite happens with higher threshold values when closer to the original position along the AP axis. Finally, for the lowest degradation values the threshold value increases position, while for higher values it decreases positon along the axis. All of these mean that changing the different rates at fixed threshold levels affects the position that this threshold its met at, and therefore affects where gene expression occurs along the AP axis.
+
+```
+
+
+
+
+```{r}
+# Part 2
+# Adding Hunchback
+
+# Defining parameters
+jo<-1        # source flux
+k<-0.01      # degradation rate
+D<-10        # diffusivity, diffusion constant, uM^2/sec
+L<-100       # length of cell uM
+Hbmax<-3     # max value bound
+Khalf<-0.8   # half amount of bicoid bound, threshold value
+n<-5
+x<-seq(0,L)
+
+# Creating Plots
+# Add a new title and x and y labels
+plot(x/L, bicoid(), type="l", col=c(1), xlim=c(0.0,1), ylim=c(0.0,3.5), xlab="Position", ylab="Concentration (a.u)", main="Bicoid & Hunchback")
+lines(x/L, Hb(), col=c(2))
+
+legend("topright",c("Bicoid","Hunchback"), fill=c(1,2))
+abline(h=0.8,lty=2) # Khalf -- Bicoid shut off HB
+abline(v=0.50,lty=2) # 50% of AP-axis sharp decrease of HB
+```
+
+```{r}
+# Part 2 -- Changing Hill Coefficient
+
+# Defining parameters
+Hbmax<-3    # max value bound
+Khalf<-0.8  # half amount of bicoid bound, threshold value
+n1<-c(2,5,8)
+
+# Bicoid parameters
+jo<-1        # source flux
+k<-0.01      # degradation rate
+D<-10        # diffusivity, diffusion constant, uM^2/sec
+L<-100       # length of cell uM
+x<-seq(0,L)
+
+# Creating Plots
+# Add a new title and x and y labels
+plot(x/L,bicoid(),type="l",col=c(1),xlim=c(0.0,1),ylim=c(0.0,3.5),xlab="position",ylab="Concentration (a.u)",main="Bicoid and Hunchback")
+for (i in 1:length(n1)){
+  n<-n1[i]
+  lines(x/L,Hb(),col=c(i+1))
+}
+
+legend("topright", c("Bicoid","n = 2","n = 5","n = 8"), fill=c(1,2,3,4))
+abline(h=0.8,lty=2)
+abline(v=0.6,lty=2,col="red")
+abline(v=0.5,lty=2,col="green")
+abline(v=0.47,lty=2,col="blue")
+```
+
+
+```{r}
+# Part 2 -- Alter Threshold Value, K  (half max value)
+
+# Defining parameters
+Hbmax<-3    # max value bound
+#Khalf<-0.8  # half amount of bicoid bound, threshold value
+Khalf1<-c(0.5,0.8,1)
+n<-5
+
+# Bicoid parameters
+jo<-1        # source flux
+k<-0.01      # degradation rate
+D<-10        # diffusivity, diffusion constant, uM^2/sec
+L<-100       # length of cell uM
+x<-seq(0,L)
+
+# Creating Plots
+# Add a new title and x and y labels
+plot(x/L, bicoid(), type="l", col=c(1), xlim=c(0.0,1), ylim=c(0.0,3.5), xlab="Position", ylab="Concentration (a.u)", main="Bicoid and Hunchback")
+for (i in 1:length(Khalf1)){
+  Khalf<-Khalf1[i]
+  lines(x/L,Hb(),col=c(i+1))
+}
+
+legend("topright",c("Bicoid","K = 0.5","K = 0.8","K = 1"),fill=c(1,2,3,4))
+abline(h=0.5,lty=2, col="red")
+abline(v=0.69,lty=2, col="red")
+abline(h=0.8,lty=2, col="green")
+abline(v=0.50,lty=2, col="green")
+abline(h=1,lty=2, col="blue")
+abline(v=0.41,lty=2, col="blue")
+
+# 5.) The horizontal line occurs when bicoid activates hunchback at 0.8 uM, and it shows how that the hunchback graph begins to exponentially decrease when the bicoid graph is at this value. The vertical line shows the hunchback is at 0.5 uM position, around halfway down the axis, which corresponds to the n value. When this value is at the same concentration as the bicoid initially was, it elicits this response. The horizontal line corresponds to the Khalf value.
+
+# 6.) When the hill coefficient changes, the steepness of the slope also changes. As n decreases, the slope becomes less steep. This means that the gradient is not as sharp and the threshold is shifted further down the AP axis towards the posterior end. The opposite happens for high n values, and Hunchback activation occurs closer to the anterior end, as seen with for 0.47 uM for n = 2 vs 0.6 uM for n = 8. For the Khalf value, the larger values mean that the half maximal concentration of bicoid that affects Hunchback shifts the activated Hunchback graph towards the anterior end, and the opposite happens for lower values where it becomes more expressed at the posterior axis. N's optimal value is around when n = 5, and Khald's optimal value is at 1, which is what is seen in the experimental data. If the steepness or threshold values changed, then different amounts of Hunchback would be expressed at different parts of the AP axis, meaning the horizontal and vertical lines would increase or decrease depending on the alteration because the n and Khalf values would be changing.
+
+```
+
+
+
+```{r}
+# Part 3
+# Add Kruppel
+
+# What does Kruppel affect?
+
+# When Kruppel is activated  -- bicoid declining in concentration Hunchback sharp decline concentration, threshold
+# When Kruppel is inhibited -- Hunchback high concentration, certain threshold Hunchback really low concentration, threshold
+
+# Bicoid Parameters
+jo<-1        # source flux
+k<-0.01      # degradation rate
+D<-10        # diffusivity, diffusion constant, uM^2/sec
+L<-100       # length of cell uM
+
+# Hunchback Parameters
+Hbmax<-3    # max value bound
+Khalf<-0.8  # half amount of bicoid bound, threshold value
+n<-5
+
+# Kruppel Parameters
+kinh<-1   #1/2 way inhibitory
+kact<-1   #1/2 way activation
+m<-5      #activation hill coefficient
+p<-5      #inhibitory hill coefficient
+B0<-11    #production rate
+x<-seq(0,L)
+
+# Solving equations for Bicoid, Hunchback, & Kruppel
+plot(x/L, bicoid(), type="l", col=c(1), xlim=c(0.0,1), ylim=c(0.0,3.5), xlab="Position", ylab="Concentration (a.u)", main="Bicoid, Hunchback, & Kruppel")
+lines(x/L, Hb(), col=c(2))
+lines(x/L, kruppel(), col=c(3))
+legend("topright", c("Bicoid","Hunchback","Kruppel"), fill=c(1,2,3))
+abline(v=0.48, lty=2)
+abline(h=1, lty=2) # both inhibition/activation symmetrical
+
+# Kruppel is centered at 48%
+```
+
+
+
+
+```{r}
+# Part 3 -- Changing Activation Hill Coefficient, m
+
+# Bicoid parameters
+jo<-1        # source flux
+k<-0.01      # degradation rate
+D<-10        # diffusivity, diffusion constant, uM^2/sec
+L<-100       # length of cell uM
+
+# Hunchback Parameters
+Hbmax<-3    # max value bound
+Khalf<-0.8  # half amount of bicoid bound, threshold value
+n<-5
+
+# Kruppel Parameters
+kinh<-1   #1/2 way inhibitory
+kact<-1   #1/2 way activation
+#m<-5     #activation hill coefficient
+m1<-c(2,5,10) # Chaning Activation Hill Coefficient
+p<-5      #inhibitory hill coefficient
+B0<-11    #production rate
+x<-seq(0,L)
+
+# Solving equations for Bicoid, Hunchback, & Kruppel
+plot(x/L, bicoid(), type="l", col=c(1), xlim=c(0.0,1), ylim=c(0.0,3.5), xlab="position", ylab="Concentration (a.u)", main="Bicoid, Hunchback, Kruppel")
+lines(x/L, Hb(), col=c(2))
+for (i in 1:length(m1)){
+  m<-m1[i]
+  lines(x/L, kruppel(), col=c(i+2))
+}
+
+legend("topright",c("Bicoid","Hunchback","m=2","m=5","m=10"),fill=c(1,2,3,4,5))
+
+abline(v=0.48,lty=2) # both inhibition/activation symmetrical
+abline(h=1,lty=2) 
+abline(v=0.50,lty=2,col=c(3)) #m=2
+abline(v=0.48,lty=2,col=c(4)) #m=5
+abline(v=0.47,lty=2,col=c(5)) #m=10
+# Kruppel is centered at 48%
+```
+
+
+
+```{r}
+# Part 3 -- Changing Inhibition Hill Coefficient, p
+
+# Bicoid parameters
+jo<-1        # source flux
+k<-0.01      # degradation rate
+D<-10        # diffusivity, diffusion constant, uM^2/sec
+L<-100       # length of cell uM
+
+# Hunchback Parameters
+Hbmax<-3    # max value bound
+Khalf<-0.8  # half amount of bicoid bound, threshold value
+n<-5
+
+# Kruppel Parameters
+kinh<-1   #1/2 way inhibitory
+kact<-1   #1/2 way activation
+m<-5      #activation hill coefficient
+p1<-c(2,5,10) # Changing Inhibitory Hill Coefficient
+#p<-5     #inhibitory hill coefficient
+B0<-11    #production rate
+x<-seq(0,L)
+
+# Solving equations for Bicoid, Hunchback, & Kruppel
+plot(x/L, bicoid(), type="l", col=c(1), xlim=c(0.0,1), ylim=c(0.0,3.5), xlab="Position", ylab="Concentration (a.u)", main="Bicoid, Hunchback, & Kruppel")
+lines(x/L, Hb(), col=c(2))
+for (i in 1:length(p1)){
+  p<-p1[i]
+  lines(x/L, kruppel(), col=c(i+2))
+}
+
+legend("topright",c("Bicoid","Hunchback","p=2","p=5","p=10"),fill=c(1,2,3,4,5))
+abline(v=0.48,lty=2)
+abline(h=1,lty=2) # both inhibition/activation symetrical
+abline(v=0.46,lty=2,col=c(3)) #p=2
+abline(v=0.48,lty=2,col=c(4)) #p=5
+abline(v=0.49,lty=2,col=c(5)) #p=10
+# Kruppel is centered at 48%
+```
+
+
+
+
+```{r}
+# Part 3 -- Changing Activation Threshold, kact
+
+# Bicoid parameters
+jo<-1        # source flux
+k<-0.01      # degradation rate
+D<-10        # diffusivity, diffusion constant, uM^2/sec
+L<-100       # length of cell uM
+
+# Hunchback Parameters
+Hbmax<-3    # max value bound
+Khalf<-0.8  # half amount of bicoid bound, threshold value
+n<-5
+
+# Kruppel Parameters
+kinh<-1   #1/2 way inhibitory
+#kact<-1  #1/2 way activation
+kact1<-c(0.8,1,1.5) # Changing 1/2 way activation threshold values
+m<-5      #activation hill coefficient
+p<-5      #inhibitory hill coefficient
+B0<-11    #production rate
+x<-seq(0,L)
+
+# Solving equations for Bicoid, Hunchback, & Kruppel
+plot(x/L, bicoid(), type="l", col=c(1), xlim=c(0.0,1), ylim=c(0.0,4.5), xlab="Position", ylab="Concentration (a.u)", main="Bicoid, Hunchback, & Kruppel")
+lines(x/L, Hb(), col=c(2))
+for (i in 1:length(kact1)){
+  kact<-kact1[i]
+  lines(x/L, kruppel(), col=c(i+2))
+}
+
+legend("topright",c("Bicoid","Hunchback","kact = 0.8","kact = 1","kact = 1.5"),fill=c(1,2,3,4,5))
+
+abline(v=0.48,lty=2,col=c(4)) # kact=1
+abline(h=1,lty=2,col=c(4)) # both inhibition/activation symmetrical
+abline(v=0.49,lty=2,col=c(3)) # kact=0.5
+abline(h=0.5,lty=2,col=c(3))
+abline(v=0.46,lty=2,col=c(5)) # kact=1.5
+abline(h=1.5,lty=2,col=c(5))
+
+
+```
+
+
+
+```{r}
+# Part 3 -- Changing Inhibition Threshold, kinh
+
+# Bicoid parameters
+jo<-1        # source flux
+k<-0.01      # degradation rate
+D<-10        # diffusivity, diffusion constant, uM^2/sec
+L<-100       # length of cell uM
+
+# Hunchback Parameters
+Hbmax<-3    # max value bound
+Khalf<-0.8  # half amount of bicoid bound, threshold value
+n<-5
+
+# Kruppel Parameters
+#kinh<-1   #1/2 way inhibitory
+kact<-1   #1/2 way activation
+kinh1<-c(0.8,1,1.5) # Changing 1/2 way inhibition threshold values
+m<-5      #activation hill coefficient
+p<-5      #inhibitory hill coefficient
+B0<-11    #production rate
+x<-seq(0,L)
+
+# Solving equations for Bicoid, Hunchback, & Kruppel
+plot(x/L, bicoid(), type="l", col=c(1), xlim=c(0.0,1), ylim=c(0.0,6), xlab="position", ylab="Concentration (a.u)", main="Bicoid, Hunchback, & Kruppel")
+lines(x/L, Hb(), col=c(2))
+for (i in 1:length(kinh1)){
+  kinh<-kinh1[i]
+  lines(x/L, kruppel(), col=c(i+2))
+}
+
+legend("topright",c("Bicoid","Hunchback","kinh = 0.8","kinh = 1","kinh = 1.5"),fill=c(1,2,3,4,5))
+
+abline(v=0.48,lty=2,col=c(4)) # kinh=1
+abline(h=1,lty=2,col=c(4)) # both inhibition/activation symmetrical
+abline(v=0.49,lty=2,col=c(3)) # kinh=0.8
+abline(h=0.5,lty=2,col=c(3))
+abline(v=0.46,lty=2,col=c(5)) # kinh=1.5
+abline(h=1.5,lty=2,col=c(5))
+
+# 7.) The horizontal line, which corresponds to hunchback level that inhibits kruppel, appears to show that at around 0.48 uM kruppel reaches its peak. At this level, The value of hunchback is at about 1, and we can see that kruppel drastically decreases in concentration once this is met as bicoid moves across the AP axis.
+
+# 8.) The optimal values for m is 2, for p is 5, for Kinh is 1, and for Kact 1 is based on the graphs and the figure provided in the protocol. The body segmentation pattern would move further down the AP axis towards the anterior end if steepness values for kruppel were altered. This means the horizontal line would drop and the vertical line would get closer to 1 uM. If the threshold values were altered, then the body segmentation pattern would move up the AP axis, and the opposite would happen to the vertical and horizontal lines.
+```
+
+```{r}
+# Part 4 -- Changing Bicoid profile/source flux
+
+# Bicoid parameters
+jo<-1        # source flux 
+k<-0.01      # degradation rate
+D<-10        # diffusivity, diffusion constant, uM^2/sec
+L<-100       # length of cell uM
+
+# Hunchback Parameters
+Hbmax<-3    # max value bound
+Khalf<-0.8  # half amount of bicoid bound, threshold value
+n<-5
+
+# Kruppel Parameters
+kinh<-1   #1/2 way inhibitory
+kact<-1   #1/2 way activation
+m<-5      #activation hill coefficient
+p<-5      #inhibitory hill coefficient
+B0<-11    #production rate
+x<-seq(0,L)
+
+# Solving equations for Bicoid, Hunchback, & Kruppel
+plot(x/L, bicoid(), type="l", col=c(1), xlim=c(0.0,1), ylim=c(0.0,3.5), xlab="Position", ylab="Concentration (a.u)", main="Bicoid, Hunchback, & Kruppel")
+lines(x/L, Hb(), col=c(2))
+lines(x/L, kruppel(), col=c(3))
+
+legend("topright",c("Bicoid","Hunchback","Kruppel"),fill=c(1:3))
+abline(v=0.48,lty=2,col="blue")
+abline(h=kact,lty=2,col="orange")
+
+jo<-3 # source flux
+
+# Solving equations for Bicoid, Hunchback, & Kruppel
+plot(x/L, bicoid(), type="l", col=c(1), xlim=c(0.0,1), ylim=c(0.0,3.5), xlab="Position", ylab="Concentration (a.u)", main="Bicoid, Hunchback, & Kruppel w/ Source Flux")
+lines(x/L, Hb(), col=c(2))
+lines(x/L, kruppel(), col=c(3))
+
+legend("topleft",c("Bicoid","Hunchback","Kruppel"),fill=c(1:3))
+abline(v=0.825,lty=2,col="blue")
+abline(h=kact,lty=2,col="orange")
+```
+
+```{r}
+# Part 4 -- Changing Hunchback profile, kact
+
+# Bicoid parameters
+jo<-1        # source flux 
+k<-0.01      # degradation rate
+D<-10        # diffusivity, diffusion constant, uM^2/sec
+L<-100       # length of cell uM
+
+# Hunchback Parameters
+Hbmax<-3    # max value bound
+Khalf<-0.8  # half amount of bicoid bound, threshold value
+n<-5
+
+# Kruppel Parameters
+kinh<-1   #1/2 way inhibitory
+kact<-1   #1/2 way activation
+m<-5      #activation hill coefficient
+p<-5      #inhibitory hill coefficient
+B0<-11    #production rate
+x<-seq(0,L)
+
+# Solving equations for Bicoid, Hunchback, & Kruppel
+plot(x/L, bicoid(), type="l", col=c(1), xlim=c(0.0,1), ylim=c(0.0,3.5), xlab="Position", ylab="Concentration (a.u)", main="Bicoid, Hunchback, & Kruppel")
+lines(x/L,Hb(),col=c(2))
+lines(x/L,kruppel(),col=c(3))
+legend("topright",c("Bicoid","Hunchback","Kruppel"),fill=c(1:3))
+abline(v=0.48,lty=2,col="blue")
+abline(h=kact,lty=2,col="orange")
+
+kact<-1.5   #1/2 way activation
+
+# Solving equations for Bicoid, Hunchback, & Kruppel
+plot(x/L, bicoid(), type="l", col=c(1), xlim=c(0.0,1), ylim=c(0.0,3.5), xlab="Position", ylab="Concentration (a.u)", main="Bicoid, Hunchback, & Kruppel w/ kact")
+lines(x/L, Hb(), col=c(2))
+lines(x/L, kruppel(), col=c(3))
+legend("topright",c("Bicoid","Hunchback","Kruppel"),fill=c(1:3))
+abline(v=0.46,lty=2,col="blue")
+abline(h=kact,lty=2,col="orange")
+abline(h=kinh,lty=2,col="orange")
+
+# 9a.) Increasing the source flux from 1 to 4, the Bicoid moved up the AP axis anteriorly. This means that Hunchback will take longer to decrease exponentially, and this shifts the graph to about 0.92 uM instead of close to halfway down the axis. The Kact value shows a horizontal line at the concentration of Hb needed to initiate Kruppel expression, so when Kact is at the horizontal line, the activation of Kruppel occurs, and the height of the Kruppel peak will be seen depending on the concentration of Hb needed to activate it.
+
+# 9b.) Increasing concentrations of Hunchback means a shift of Kruppel will be further up the AP axis posteriorly. Since Kact and Kinh affect height in the previous graph, when they reach the horizontal lines they will activate Kruppel, and the height of Kruppel will be dependent on where along the axis they activate it. The range of activation is narrow due to it being balanced between 1 and 2 Hunchback concentration for inhibition and activation, which again causes a significant difference to the Kruppel concentration height and position along the axis.
+```
+
+
+
+

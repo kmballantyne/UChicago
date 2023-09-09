@@ -1,0 +1,56 @@
+---
+title: "Cell Cycle Pre-Lab"
+author: "Keegan Ballantyne"
+date: "4/22/2022"
+output: html_document
+---
+
+```{r}
+rm(list=ls())
+library(deSolve)  # library to solve ODEs
+# Relaxation oscillator for cell cycle in Xenopous egg cells - early in in development. 
+
+# create function of the RHS of the 2D ODEs
+func <- function(t, y, p) {
+  CDK1<-y[1]
+  APC<-y[2]
+  with(as.list(p),{
+    dCDK1 <- alpha1-beta1*CDK1*(APC^n/(APC^n + K^n)) + alpha3*(1-CDK1)*(CDK1^n/(CDK1^n+K^n)) 
+    dAPC <- alpha2*(1-APC)*(CDK1^n/(CDK1^n + K^n)) - beta2*APC
+    return(list(c(dCDK1,dAPC)))})
+  }
+```
+
+```{r}
+# sustained oscillations - Rapid cell division - executes autonomous oscillations reminiscent of rapid cell cycling in early embryos. 
+
+# parameters from Tyson paper
+alpha1 = 0.02    # concentration/time
+alpha2 = 3       # time-1
+alpha3 = 3       # time-1
+beta1 = 3        # time-1
+beta2 = 1        # time-1
+K=0.5            # concen units
+n=8 
+
+# Initial conditions
+CDK1_int<-0.5 # concen units
+APC_int<-0.5  # concen units
+
+times  <- seq(0, 50, 0.001)
+# This vector full of parameters is needed to solve ODEs
+p<-c(alpha1=alpha1,alpha2=alpha2,alpha3=alpha3,beta1=beta1,beta2=beta2,K=K,n=n)
+y0 <- c(CDK1=CDK1_int, APC=APC_int)  # The initial conditions
+
+#calling ODE solver
+out<-ode(y=y0,times,func,p)
+
+#plotting solution 
+plot(out[,1],out[,2],type="l",col="blue",xlim=c(0,50),ylim=c(0,1),xlab="time",ylab="Activity",main="Oscillations in CDK1/APC")
+lines(out[,1],out[,3],col="red")
+legend("topright", inset=.05, c("CDK1", "APC"), fill=c("blue","red"), horiz=TRUE)
+
+# Coupled with a negative feedback loop, this toggle switch results in stable limit cycle oscillations. The activity of CDK1 rises slowly at first and then explodes up toward high mitotic levels. A rapid rise in APC is follows closely too, which changes the rapid rise in CDK1 to a similarly rapid fall. Once CDK1 has fallen enough to turn APC back off, the system begins to slowly ramp up toward its next spike. The oscillations in CDK1 activity are qualitatively similar to those seen in cycling Xenopus egg extracts
+
+```
+

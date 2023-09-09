@@ -1,0 +1,273 @@
+---
+title: "HB Transcription Cell Cycle Lab"
+author: "Keegan Ballantyne"
+date: "4/27/2022"
+output: html_document
+---
+
+```{r}
+rm(list=ls())
+library(deSolve)  # library to solve ODEs
+# use dede in deSolve library - delay differential equations.
+
+# ODE Function solver
+derivs <- function(t, y, p) {
+  
+  if (t < tR)
+    lag <- 0
+  else
+    lag <- lagvalue(t - tR)
+  
+  if (t<tshut){
+    kon<-kon
+  }
+  else{
+    kon<-0
+  }
+  dy1 <- kon*(1-y[1]) - koff*y[1]
+  dy2 <- kmRNA*lag[1]- v*y[2]
+  list(c(dy1, dy2))
+}
+```
+
+```{r}
+# Initial values
+Gon_init<-0 
+R_init<- 30 
+
+# Parameters
+tshut<-2.6
+kon<-0.5      
+koff<-0.4     
+v<-0.09
+kmRNA <- 16
+t1<- 0.4
+tR<-4.7
+
+# Parameters vector
+p<-c(tshut=tshut,kon=kon,koff=koff,v=v,kmRNA=kmRNA,t1=t1,tR=tR)
+
+# Times array
+times <- seq(0,80,0.01)
+
+# Calling initial values
+y0 <- c(Gon_init=Gon_init, R_init=R_init)
+
+# Figure 2A
+solve<-dede(y=y0,times=times,func=derivs,parms=p)
+plot(solve[,1],solve[,2],xlim=c(0,15),ylim=c(0,0.6),type = "l",col=c(1),main="[Gon] WT vs. Time",xlab="Time min",ylab="fraction Gon")
+
+# No shutdown of hb gene
+tshut <- 100
+p<-c(tshut=tshut,kon=kon,koff=koff,v=v,kmRNA=kmRNA,t1=t1,tR=tR)
+solve<-dede(y=y0,times=times,func=derivs,parms=p)
+lines(solve[,1],solve[,2],col=c(2),lty=2)
+legend("topright",c("Shutoff","No Shutoff"), fill=c(1:2))
+
+# 1.)
+# # With no shutdown, we see that the fraction of Gon increases to a horizontal asymptope of 0.6. With the shut down, the fraction of Gon increases to just above 0.5 and then shutsoff and sharply decreases to a horizontal asymptope of about 0.0.
+# 
+# If the hb gene was not shutoff, there would be uncontrallable thoracic issues because high amounts of the copy of this gene are being expressed.
+
+# Figure 2B
+tshut<-2.6
+p<-c(tshut=tshut,kon=kon,koff=koff,v=v,kmRNA=kmRNA,t1=t1,tR=tR)
+solve<-dede(y=y0,times=times,func=derivs,parms=p)
+plot(solve[,1],solve[,3],xlim=c(0,60),ylim=c(0,100),type = "l",col=c(1),main="[R] WT vs. Time",xlab="Time (min.)",ylab="[] (a.u.)")
+
+# No shutdown of hb gene
+tshut <- 100
+p<-c(tshut=tshut,kon=kon,koff=koff,v=v,kmRNA=kmRNA,t1=t1,tR=tR)
+solve<-dede(y=y0,times=times,func=derivs,parms=p)
+lines(solve[,1],solve[,3],col=c(2),lty=2)
+legend("topright",c("Shutoff","No Shutoff"), fill=c(1:2))
+
+# 2.)
+# With no shutdown, we see that the fraction of Gon increases and drops until after 10 minutes to almost 0 [R]. to a horizontal asymptope of about 30. With the shut down, the fraction of Gon increases to an asymptope above about 80 [R]. After this complete shutdown we see that there will be a decrease in the hb gene copies. If this doesn't happen then thoracitic issues can dvelop as a result of a high expression of mRNA in the cytoplasm. 
+ 
+# Figure 2C
+tshut<-2.6   # shut off time for WT
+p<-c(tshut=tshut,kon=kon,koff=koff,v=v,kmRNA=kmRNA,t1=t1,tR=tR)
+solve<-dede(y=y0, times=times, func=derivs, parms=p)
+plot(solve[,1], solve[,2], xlim=c(0,15), type="l", ylim=c(0,0.6), col=c(1), main="[Gon] WT w/ 2 Mutants", xlab="Time (min.)", ylab="Fraction Gon")
+
+tshut<-2.2   # shut off time for dmpd
+p<-c(tshut=tshut,kon=kon,koff=koff,v=v,kmRNA=kmRNA,t1=t1,tR=tR)
+solve<-dede(y=y0,times=times,func=derivs,parms=p)
+lines(solve[,1],solve[,2],col=c(2))
+
+tshut<-3.6   # shut off time for sumo
+p<-c(tshut=tshut,kon=kon,koff=koff,v=v,kmRNA=kmRNA,t1=t1,tR=tR)
+solve<-dede(y=y0,times=times,func=derivs,parms=p)
+lines(solve[,1],solve[,2],col=c(3))
+legend("topright", legend = c("WT","dmpd","sumo"),fill=c(1:3))
+
+# 3.) Compared to wildtype, dmpd reaches a lower peak fraction, while sumo reaches a higher peak fraction. These peak fractions correlates to the shutoff times (dmpd = 2.2 mins and sumo = 3.6 mins). The proposed mechanism for dmpd and sumo mutants they will change the timing of kon shutoffs because they have altered dynamics of hb transcription at n14. The results seem to prove this because it varies from the wildtype and result in overall elongated or shortened timeframes for hb gene copies remaining active. 
+
+# Figure 2D
+tshut<-2.6   # shut off time of gene WT
+p<-c(tshut=tshut,kon=kon,koff=koff,v=v,kmRNA=kmRNA,t1=t1,tR=tR)
+solve<-dede(y=y0, times=times, func=derivs, parms=p)
+plot(solve[,1], solve[,3], xlim=c(0,60), type="l", ylim=c(0,40), col=c(1), main="[R] vs. Time w/ 2 Mutants", xlab="Time (min.)", ylab="[] (a.u.)")
+
+tshut<-2.2   # shut off time of gene dmpd
+p<-c(tshut=tshut,kon=kon,koff=koff,v=v,kmRNA=kmRNA,t1=t1,tR=tR)
+solve<-dede(y=y0,times=times,func=derivs,parms=p)
+lines(solve[,1],solve[,3],col=c(2))
+
+tshut<-3.6   # shut off time of gene sumo
+p<-c(tshut=tshut,kon=kon,koff=koff,v=v,kmRNA=kmRNA,t1=t1,tR=tR)
+solve<-dede(y=y0,times=times,func=derivs,parms=p)
+lines(solve[,1],solve[,3],col=c(3))
+legend("topright", legend = c("WT","dmpd","sumo"),fill=c(1:3))
+
+# 4.) The dmpd and sumo mRNA profiles perform similarly to the Gon graph compared to the wildtype. The dmpd had a lower concentration peak and sumo had a higher one. Therefore dmpd hb mRNA profile takes less time to deplete, even just barely, and reaches a smaller peak mRNA concentration after shutting off of the gene. The sumo mRNA peak is higher, and it takes longer to reach than for the wildtype. Additionally, takes longer to deplete to 0. Overall, dmpd mutants are likely to have underexpressed hb proteins, sumo mutants they are likely to have overexpressed hb proteins.
+```
+```{r}
+# Changing kon
+
+# Initial values
+Gon_init<-0 
+R_init<- 30 
+
+# Parameters
+tshut<-2.6
+kon<-0.5      
+koff<-0.4     
+v<-0.09
+kmRNA <- 16
+t1<- 0.4
+tR<-4.7
+kon1<-seq(0.1,0.9,0.1)
+
+y0<-c(Gon=Gon_init,R=R_init)
+
+p<-c(tshut=tshut,kon=kon,koff=koff,v=v,kmRNA=kmRNA,t1=t1,tR=tR)
+
+times  <- seq(0, 80, 0.01)
+
+# Visualizations
+# Empty plot
+plot(0,0,type="n",ylim=c(0,0.7),xlim=c(0,30), main="[Gon] vs. Time w/ Varying kon", xlab="Time (min.)", ylab="[] (a.u.)")
+
+for (i in 1:length(kon1)){
+  kon<-kon1[i]
+  p<-c(tshut=tshut,kon=kon,koff=koff,v=v,kmRNA=kmRNA,t1=t1,tR=tR)
+  solve<-dede(y=y0,times=times,func=derivs,parms=p)
+  lines(solve[,1],solve[,2],col=c(i))
+}
+legend("topright", legend = kon1,fill=c(1:length(kon1)), cex = 0.5)
+
+# 5.) The graph shows that when kon rises, peak Gon fraction at shutoff time rises too. Meaning that higher kon values deplete completely at a slower rate of activated hb gene fractions. The opposite is true for the lines of lower kon fractions. The kon value essentially acts as a binding affinity of proteins necessary for transcription of activated hb genes. Cells can biologically augment this by sending signals out, decreasing binding affinity to the gene. This would either cause higher or lower expression. Consequences of this can be altering the thoracic development by delaying it or making it happen prematurely.
+
+# Empty plot
+plot(0,0,type="n",ylim=c(0,60),xlim=c(0,60), main="[R] vs. Time w/ Varying kon", xlab="Time (min.)", ylab="[] (a.u.)")
+for (i in 1:length(kon1)){
+  kon<-kon1[i]
+  p<-c(tshut=tshut,kon=kon,koff=koff,v=v,kmRNA=kmRNA,t1=t1,tR=tR)
+  solve<-dede(y=y0,times=times,func=derivs,parms=p)
+  lines(solve[,1],solve[,3],col=c(i))
+}
+legend("topright", legend = kon1,fill=c(1:length(kon1)), cex = 0.5)
+
+# 6.) Looking at the [Gon] graph, higher kon values have higher peak mRNA, and lower kon values have lower peaks of mRNA within the cytoplasm. Some consequences could be that thoracic development change. This can either happen prematurely when kon values (or the binding affinity to activated genes) is higher, or delayed when binding affinity to activated hb genes lowers. Too many proteins bound to the genes, this allows them to transcribe more of the mRNA before shutoff, leading to greater hb protein expression.
+```
+
+```{r}
+# Changin koff
+
+# Initial values
+Gon_init<-0 
+R_init<- 30 
+
+# Parameters
+tshut<-2.6
+kon<-0.5      
+koff<-0.4     
+v<-0.09
+kmRNA <- 16
+t1<- 0.4
+tR<-4.7
+koff1<-seq(0.1,0.9,0.1)
+
+y0<-c(Gon=Gon_init,R=R_init)
+
+p<-c(tshut=tshut,kon=kon,koff=koff,v=v,kmRNA=kmRNA,t1=t1,tR=tR)
+
+times  <- seq(0, 80, 0.01) 
+
+# Visualizations
+
+# Empty plot
+plot(0,0,type="n",ylim=c(0,0.7),xlim=c(0,30), main="[R] vs. Time w/ Varying kon", xlab="Time (min.)", ylab="[] (a.u.)")
+for (i in 1:length(koff1)){
+  koff<-koff1[i]
+  p<-c(tshut=tshut,kon=kon,koff=koff,v=v,kmRNA=kmRNA,t1=t1,tR=tR)
+  solve<-dede(y=y0,times=times,func=derivs,parms=p)
+  lines(solve[,1],solve[,2],col=c(i))
+}
+legend("topright", legend = koff1,fill=c(1:length(koff1)), cex = 0.5)
+
+# 7.) Looking at the graph, small values of koff result in higher [Gon] fractions before the gene is shut off. Now, higher values slowly deplete completely because there is less hb gene is transcribed successfully. Like kon, koff acts as the binding affinity for the transcription proteins to cause release from the hb gene, completing the creation of mRNA. A biological augmentation that the cell could utilize is sending signals to release protein from the DNA, leading to more expression. If the release value is lower and delays its release time there's less expression if the release value is higher and prematurely releases. This could cause missexpression of the hb protein during translation because of altered mRNA. This would cause thoracic development issues.
+
+# Empty plot
+plot(0,0,type="n",ylim=c(0,60),xlim=c(0,60), main="[Gon] vs. Time w/ Varying kon", xlab="Time (min.)", ylab="[] (a.u.)")
+for (i in 1:length(koff1)){
+  koff<-koff1[i]
+  p<-c(tshut=tshut,kon=kon,koff=koff,v=v,kmRNA=kmRNA,t1=t1,tR=tR)
+  solve<-dede(y=y0,times=times,func=derivs,parms=p)
+  lines(solve[,1],solve[,3],col=c(i))
+}
+legend("topright", legend = koff1,fill=c(1:length(koff1)), cex = 0.5)
+
+# 8.) Looking at the [Gon] graph, smaller values of koff cause higher mRNA concentrations right at active gene depletion around 10 minutes. Consequently, thoracic development will alter or not exist because the koff value is too high or be overexpressed or not function if it is too low.
+```
+
+```{r}
+# Changing tshut
+
+# Initial values
+Gon_init<-0 
+R_init<- 30 
+
+# Parameters
+tshut<-2.6
+kon<-0.5      
+koff<-0.4     
+v<-0.09
+kmRNA <- 16
+t1<- 0.4
+tR<-4.7
+tshut1<-seq(1,20,2)
+
+y0<-c(Gon=Gon_init,R=R_init)
+
+p<-c(tshut=tshut,kon=kon,koff=koff,v=v,kmRNA=kmRNA,t1=t1,tR=tR)
+
+times  <- seq(0, 80, 0.01)
+
+# Visualization
+# Empty plot
+plot(0,0,type="n",ylim=c(0,100),xlim=c(0,60), main="[Gon] vs. Time w/ Varying kon", xlab="Time (min.)", ylab="[] (a.u.)")
+for (i in 1:length(tshut1)){
+  tshut<-tshut1[i]
+  p<-c(tshut=tshut,kon=kon,koff=koff,v=v,kmRNA=kmRNA,t1=t1,tR=tR)
+  solve<-dede(y=y0,times=times,func=derivs,parms=p)
+  lines(solve[,1],solve[,2],col=c(i))
+}
+legend("topright", legend = tshut1,fill=c(1:length(tshut1)), cex = 0.5)
+
+# 9.) The tshut values graph informs that delayed shutoff times causes reaching the peak to happen later, and this happens with higher [Gon] concentrations too a plateau at max after tshut = 5 happens. Cells can cause inactivation in a premature or in a delayed manner of the hb gene by sending signals to begin capping proteins or causing other inactivation factors on the hb gene. This blocks transcription after some development time has passed which causes the expression of the protein to change when neccessary. 
+
+# Empty plot
+plot(0,0,type="n",ylim=c(0,100),xlim=c(0,60), main="[R] vs. Time w/ Varying kon", xlab="Time (min.)", ylab="[] (a.u.)")
+for (i in 1:length(tshut1)){
+  tshut<-tshut1[i]
+  p<-c(tshut=tshut,kon=kon,koff=koff,v=v,kmRNA=kmRNA,t1=t1,tR=tR)
+  solve<-dede(y=y0,times=times,func=derivs,parms=p)
+  lines(solve[,1],solve[,3],col=c(i))
+}
+legend("topright", legend = tshut1,fill=c(1:length(tshut1)), cex = 0.5)
+
+# 10.) As time increases, the concentrations of mRNA after the completed depleted shutoff also rises, this means that increased shutoff time causes mRNA concentration to increase. This is because of the Bicoid protein turning off activation completely, which stops transcription or translation after that certain point. Some consequences that could happen is that proper hb gene activation is delayed or premature or doesn't occur at all. Meaning that thoracic development will be changed depending on time. It will either be functional, over-functional, or won't exist at all due to which of the times hb is shut off.
+```

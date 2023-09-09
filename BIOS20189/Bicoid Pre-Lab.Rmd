@@ -1,0 +1,40 @@
+---
+title: "Bicoid_Pre-Lab"
+author: "Keegan Ballantyne"
+date: "5/6/2022"
+output: html_document
+---
+
+```{r}
+# Part 1 
+# Solving steady state equations for bicoid gradient
+# Clearing environment
+rm(list=ls())
+# State state equation function
+bicoid<-function(){
+  co<-jo/sqrt(D*k)   # Beginning rate
+  lambda<-sqrt(D/k)
+  concen<-co*exp(-x/lambda)
+  return(concen)
+}
+```
+
+```{r}
+# Parts 1.1 & 1.2
+# Defining parameters
+jo <- 1        # source flux
+k <- 0.01      # degradation rate
+D <- 10        # diffusivity, diffusion constant, (uM^2/sec)
+L <- 100       # length of cell (uM)
+
+x <- seq(0,L)
+    
+plot(x/L,bicoid(),type="l",col=c(1),xlim=c(0.0,1),ylim=c(0.0,3.5),xlab="position",ylab="Concentration (a.u)",main="Steady State Solution of Bicoid concentration vs. length")
+abline(h=1,col=c(2),lty=2)
+legend("topright",inset=0.05,c("Bicoid","Threshold"),fill=c(1,2))
+
+# Looking at the graph there's an exponential decay of the bicoid [] over the normalized length of the cell. This spread of bicoid [] controls the expression of gap genes throughout the cell. This spread happens because higher concentrations of the bicoid protein appear at the anterior end of the embryo body plane and then eventually decreases moving further to the opposite posterior side. This is likely caused by maternal RNA being deposited and remaining on the anterior side of the egg.
+
+# The threshold at 1 indicates the concentration of bicoid proteins causing different changes in the body plan. Under 1 concentration (a.u.), kruppel expression becomes possible. Alternatively above 1 concentration (a.u.) hunchback expression becomes possible. This occurs at ~0.37 uM in the embryo, a little more than a thrid of the way down. Assuming a fixed threshold, a different variable like the slope of the line can be used to alter the change in pattern formation.
+
+```
