@@ -1,0 +1,251 @@
+---
+title: "Cell Cycle Pre-Lab"
+author: "Keegan Ballantyne"
+date: "4/20/2021"
+output: html_document
+---
+
+```{r}
+rm(list = ls())
+library(deSolve)
+#create a function that contains 2 RHS of ODEs - dX/dt, dY/dt
+#t = time step
+#y = array with initial values for state parameters
+#p = array containing all parameters used within the system
+func <- function(t,y,p){
+  x <- y[1]
+  y <- y[2]
+  with(as.list(p),{
+    # write out the right hand side of diffeq
+    dx <- bx*(y^n/(y^n+Kx^n))-ax*x
+    dy <- by*(x^n/(x^n+Ky^n))-ay*y
+    return(list(c(dx,dy)))
+  })
+}
+
+```
+
+
+```{r}
+#Part I
+
+#initial conditions X(0), Y(0)
+x_int <- 1.5
+y1_int <- 1.0
+n <- 4
+bx <- 2
+ax <- 1
+by <- 2
+ay <- 1
+Kx <- 0.8
+Ky <- 1.0
+#initial conditions array
+
+y0 <- c(x=x_int, y=y1_int)
+
+# parameter array
+p <- c(bx=bx, ax=ax, by=by, ay=ay, Kx=Kx, Ky=Ky, n=n)
+
+# time array
+times <- seq(0,10,0.01)
+
+# call ODE solver
+out <- ode(y=y0, times, func, p)
+
+#plot the solutions - out will be solution matrix - out [row, column]
+
+# Plot X(t)
+plot(out[,1], out[,2], type = "l", xlab = "Time", ylab = "Concentration", main = "2D ODEs", col = c(1)) 
+# Plot Y(t)
+lines(out[,1], out[,3], col = c(2)) 
+
+legend("bottomright", c("X(t)", "Y(t)"), fill = c(1,2))
+
+# Over time both the X and Y Units decrease fairly quickly to an end behavior of 0 by t = 6.
+
+```
+
+
+```{r}
+#Part II
+
+# Range of initial conditions
+
+x_initial <- seq(0, 1, 0.1)
+y_initial <- seq(0, 1, 0.1)
+
+y0a <- c(x=x_initial, y=y_initial)
+
+plot(0, 0, type = "n", xlim = c(0, 10), ylim = c(0, 2), xlab = "Time", ylab = "Concentration", main = "Bistable Switch")
+
+for (i in 1:length(x_initial)) {
+  y0a <- c(x = x_initial[i], y = y_initial[i] )
+  out2 <- ode(y=y0a, times, func, p)
+  lines(out2[ ,1], out2 [ ,2], col = c(1))
+  lines(out2[ ,1], out2 [ ,3], col = c(2))
+}
+legend("topright", c("X(t)", "Y(t)"), fill = c(1,2))
+
+# I see that the as you change the concentrations the starting point decreases more and more and it goes to a concentration of 0 in shorter amounts of time. This means that as you increase the concentrations you also increase the production rate and the degredation rates which then lead to different steady states.
+
+```
+```{r}
+#Part III
+
+library(rootSolve)
+
+library(phaseR)
+xlim = c(0, 2.5)
+ylim = c(0, 2.5)
+
+doublepos.nul <- nullclines(func, xlim, ylim, parameters = p, system = "two.dim", points = 500, col = c("blue", "green"), add = FALSE, add.legend = TRUE, state.names = c("X", "Y"), main = "Stability Graph", xlab = "Time", ylab = "Concentration")
+
+doublepos.vector <- flowField(func, xlim, ylim, parameters = p, points = 25, add = TRUE)
+
+y0 <- matrix(c(1,0,2,0,0,1.3), ncol = 2, nrow = 3, byrow = TRUE)
+
+doublepos.traj <- trajectory(func, y0 = y0, tlim = c(0,10), tstep = 0.01, parameters = p, system = "two.dim", col = c("red", "red", "red"), state.names = c("X", "Y"), add = TRUE)
+
+x_init <- c(1,2,0)
+y_init <- c(0,0,1.3)
+times <- seq(0,10,0.01)
+
+x_int <- 1.5
+y1_int <- 1.0
+n <- 4
+bx <- 2
+ax <- 1
+by <- 2
+ay <- 1
+Kx <- 0.8
+Ky <- 1.0
+
+p <- c(bx=bx, ax=ax, by=by, ay=ay, Kx=Kx, Ky=Ky, n=n)
+
+plot(0, 0, type = "n", main = "Bistable Switch", xlab = "Time (time units)", ylab = "Concentration (Concentration Units)", xlim = c(0,10), ylim = c(0,2))
+
+for (i in 1:length(x_init)){
+  y0 <- c(x = x_init[i], y1 = y_init[i])
+  out <- ode(y=y0, times, func, p)
+  lines(out[,1], out[,2], col = c(1))
+  lines(out[,1], out[,3], col = c(2))
+  x <- steady(y=y0,time = c(0,10), func = func, parms = p, method = "runsteady")
+  print(x[1])
+}
+legend("bottomright", c("x", "y"), fill = c(1,2))
+
+# I see that the trajectories go towards the different steady states. The system has different steady states This means that the steady state is dependent on initial concentration. There are two steady states and one is at 0, and the other is at 1.75
+
+# What I see is that the concentration is effected when you have different initial concentrations, and they reach these concentrations and remain steady in them. When you change the initial conditions for X and Y you change what concentration they will be in for the steady state over time. This means that the concentration at the steady state is affected by the initial concentration.
+ 
+# A bistable switch is essentially a genetic toggle switch that helps cell regulation of many different cellular functions. Biologists can utilize the features of bistability by simply toggling the switch, or preventing the toggling of a switch, through activating different mechanisms in order to get specific cellular outcomes. Relate...
+
+```
+
+```{r}
+#Part IV
+
+#Question 1
+
+func <- function(t,y,p) {
+  Y <- y[1]
+  YP <- y[2]
+  C2 <- y[3]
+  CP <- y[4]
+  pM <- y[5]
+  M <- y[6]
+  with(as.list(p),{
+    CT <- C2+CP+pM+M
+    k1 <- k1norm*(C2+CP+pM+M)
+    dY <- k1-(k2*Y)-(k3*CP*Y)
+    dYP <- (k6*M)-(k7*YP)
+    dC2 <- (k6*M)-(k8*C2)+(k9*CP)
+    dCP <- (-k3*CP*Y)+(k8*C2)-(k9*CP)
+    dpM <- (k3*CP*Y)-(pM*(k4prime+k4*(M/CT)^2)+(k5*M))
+    dM <- (pM*(k4prime+k4*(M/CT)^2)-(k5*M)-(k6*M))
+    return(list(c(dY,dYP,dC2,dCP,dpM,dM)))
+  })
+}
+
+k1norm <- 0.015
+k2 <- 0
+k3 <- 200
+k4prime <- 0.018
+k4 <- 180
+k5 <- 0
+k6 <- 1
+k7 <- 0.6
+k9 <- 100*k6
+k8 <- 100*k9
+
+
+p <- c(k1norm=k1norm, k2=k2, k3=k3, k4prime=k4prime, k4=k4, k5=k5, k6=k6, k7=k7, k8=k8, k9=k9)
+
+Y_int <- 0.1
+YP_int <- 0.1
+C2_int <- 0.5
+CP_int <- 0.5
+pM_int <- 0.1
+M_int <- 0.1
+
+y0 <- c(Y=Y_int, YP=YP_int, C2=C2_int, CP=CP_int, pM=pM_int, M=M_int)
+
+times <- seq(0, 200, 0.01)
+
+out <- ode(y=y0, times, func, p)
+
+plot(out[,1], out[,2], type = "l", xlab = "Time", ylab = "Concentration", main = "Protein Concentrations vs. Time", col = c(1), ylim = c(0,1.2)) 
+lines(out[,1], out[,3], col = c(2))
+lines(out[,1], out[,4], col = c(3))
+lines(out[,1], out[,5], col = c(4))
+lines(out[,1], out[,6], col = c(5))
+lines(out[,1], out[,7], col = c(6))
+
+legend("topright", c("Y", "YP", "C2", "CP", "pM", "M"), fill = c(1,2,3,4,5,6), cex = 0.5)
+
+# I see that there are many oscillations of the concentration of the proteins as it progresses through time, and there are different ranges of oscillations depending on the initial concentration of the protein. What's left out of the simplified mathematical model are the amino acid concetrations, the wee1 concentrations, and the phosphorylation and dephosphorylation.
+
+# Question 2
+
+Y <- out[,2]
+YP <- out[,3]
+C2 <- out[,4]
+CP <- out[,5]
+pM <- out[,6]
+M <- out[,7]
+CT <- (C2+CP+pM+M)
+YT <- (Y+YP+pM+M)
+norm_cyclin <- YT/CT
+not_activeMPF <- M/CT
+
+plot(out[,1], norm_cyclin, type = "l", main = "Normal Cyclin vs. Time", xlab = "Time", ylab = "Concentration", col = c(1), ylim = c(0,0.40))
+lines(out[,1], not_activeMPF, col = c(2))
+legend("topright", legend = c("Normal Cyclin", "Non-Active MPF"), col = c(1,2), lwd = 1, cex = 0.80)
+
+# Again there is oscillation within the concentration over time. These normalized quantities tell us that the biological system works as the oscillatory system can be a mode of control among others in order to help regulate cell function based on different times.
+
+# Question 3
+
+plot(out[,1], out[,5], type = "l", main = "Normalized [MPF] vs. Time", xlab = "Time", ylab = "Normalized M for various k6 values", col = c(1), ylim = c(0,1.5))
+
+k6 <- 0.2
+p <- c(k1norm=k1norm, k2=k2, k3=k3, k4prime=k4prime, k4=k4, k5=k5, k6=k6, k7=k7, k8=k8, k9=k9)
+out <- ode(y=y0,times,func,p)
+lines(out[,1], out[,5], col = c(2))
+
+k6 <- 1
+p <- c(k1norm=k1norm, k2=k2, k3=k3, k4prime=k4prime, k4=k4, k5=k5, k6=k6, k7=k7, k8=k8, k9=k9)
+out <- ode(y=y0,times,func,p)
+lines(out[,1], out[,5], col = c(3))
+
+k6 <- 5
+p <- c(k1norm=k1norm, k2=k2, k3=k3, k4prime=k4prime, k4=k4, k5=k5, k6=k6, k7=k7, k8=k8, k9=k9)
+out <- ode(y=y0,times,func,p)
+lines(out[,1], out[,5], col = c(4))
+
+legend("topright", legend = c("k6 = 0.2", "k6 = 1", "k6 = 5"), col = c(2,3,4), lwd = 1, cex = 0.85)
+
+# Very small values of k6 cause the oscillations to cease because it initiates a sort of metaphase arrest for the cellular function by putting it in a steady state behavior. Very large values of k6 cause the oscillations to decrease because the cell in in the process of mitosis and it reaches a steady state behavior similar to very small values of k6
+
+```
+
