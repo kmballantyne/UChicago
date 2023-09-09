@@ -9,7 +9,6 @@ This will be updated quarterly
 
 Courses include:
 - BIOS 20151: Introduction to Quantitative Modeling in Biology
-- BIOS 20153: Fundamentals of Ecology and Evolution
 - BIOS 20186: Fundamentals of Cell and Molecular Biology
 - BIOS 20187: Fundamentals of Genetics
 - BIOS 20188: Fundamentals of Physiology
