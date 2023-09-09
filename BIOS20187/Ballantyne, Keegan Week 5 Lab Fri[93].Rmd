@@ -1,0 +1,371 @@
+---
+title: "Week 5 Genetic Oscillators Lab"
+author: "Keegan Ballantyne"
+date: "10/29/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r}
+rm(list = ls(all = TRUE))
+library(deSolve)
+func <- function(t,y,p){
+  ComK <- y[1]
+  ComS <- y[2]
+  with(as.list(p),{
+    dComK <- gamma*ComS + betaX*(ComK^n/(ComK^n+K^n))-alphaX*ComK
+    dComS <- betaY*(L^m/(ComK^m+L^m))-alphaY*ComS
+    #where X = ComK [] and Y = ComS []
+    return(list(c(dComK,dComS)))})
+}
+
+```
+
+```{r}
+# Part 2
+
+#initial concentration
+ComK_int <- 1
+ComS_int <- 1
+#default parameters
+alphaX <- 5 #1/time
+alphaY <- 0.3 #1/time
+betaX <- 4 #[]/time
+betaY <- 1 #[]/time
+gamma <- 1 #1/time
+K <- 0.5 #[] a.u.
+L <- 0.3 #[] a.u.
+m <- 4
+n <- 3
+#initial conditions
+y0 <- c(ComK=ComK_int, ComS=ComS_int)
+#times array
+times <- seq(0,100,0.001)
+
+#vector with parameters
+p <- c(gamma=gamma, betaX=betaX, betaY=betaY, alphaX=alphaX, alphaY=alphaY, K=K, L=L, m=m, n=n)
+
+#invoking ODE
+out <- ode(y=y0,times,func,p)
+
+plot(out[,1], out[,2], ylab = "Concentration", xlab = "Time", main = "Control Plot []/Time", type = "l", xlim = c(0,100), ylim = c(0,2))
+lines(out[,1], out[,3], col = "red")
+legend("topright", c("ComK","ComS"), fill = c("black", "red"))
+
+plot(out[,2], out[,3], ylab = "ComS Concentration", xlab = "ComK Concentration", main = "Trajectory") #trajectory graph
+
+# In the control plot, the concentrations of both ComS and ComK oscillate over time and the graphs repeatedly intersect each other over time. The concentrations of both ComK and ComS are never above 1.0 and below 0.0 concentration over time. The second plot shows the trajectory of ComK and ComS in the phase plane, and it shows and inverse relationship i.e. the concentration of ComS decreases, the concentration of ComK increases and vice versa.
+```
+
+```{r}
+#Part 2 con't
+
+Null <- seq(0,2,0.01)
+
+ComKnull <- ((alphaX/gamma)*Null)-((betaX/gamma)*(Null^n/(Null^n+K^n))) #ComK nullcline
+ComSnull <- (betaY/alphaY)*(L^m/(L^m+Null^m)) #ComS nullcline
+
+plot(Null, ComKnull, ylab = "Concentration", xlab = "Time", main = "Nullcline Plots ComK & ComS", type = "l", xlim = c(0,2), ylim = c(0,2))
+lines(Null, ComSnull, col = "red")
+legend("topright", c("ComK Null", "ComS Null", "ComK/ComS Trajectory", "ComK/ComS Int = 2", "ComK/ComS Int = 10", "ComK/ComS Int = 0.1"), fill = c("black", "red", "deeppink", "darkmagenta", "cyan", "orange"))
+lines(out[,2], out[,3], col = "deeppink") #trajectory graph
+
+#initial 2
+ComK_int <- 2
+ComS_int <- 2
+y0 <- c(ComK=ComK_int, ComS=ComS_int)
+out <- ode(y=y0,times,func,p)
+lines(out[,2], out[,3], col = "darkmagenta") #trajectory 2
+#initial 3
+ComK_int <- 10
+ComS_int <- 10
+y0 <- c(ComK=ComK_int, ComS=ComS_int)
+out <- ode(y=y0,times,func,p)
+lines(out[,2], out[,3], col = "cyan") #trajectory 3
+#initial 4
+ComK_int <- 0.1
+ComS_int <- 0.1
+y0 <- c(ComK=ComK_int, ComS=ComS_int)
+out <- ode(y=y0,times,func,p)
+lines(out[,2], out[,3], col = "orange") #trajectory 4
+
+# The nullclines cross at 0.5 concentration units at 0.5 time units, which shows that this is a fixxed point. However, the trajectories do not concentrate around the fixed point, but rather they all circle around it which means that the fixed point is unstable.
+```
+
+```{r}
+# Part 3
+
+#initial concentration
+ComK_int <- 1
+ComS_int <- 1
+#default parameters
+alphaX <- 5 #1/time
+alphaY <- 1.5 #1/time
+betaX <- 4 #[]/time
+betaY <- 1 #[]/time
+gamma <- 1 #1/time
+K <- 0.5 #[] a.u.
+L <- 0.2 #[] a.u.
+m <- 4
+n <- 3
+#vector with parameters
+p <- c(gamma=gamma, betaX=betaX, betaY=betaY, alphaX=alphaX, alphaY=alphaY, K=K, L=L, m=m, n=n)
+#initial conditions
+y0 <- c(ComK=ComK_int, ComS=ComS_int)
+#times array
+times <- seq(0,100,0.001)
+#invoking ODE
+out <- ode(y=y0,times,func,p)
+# plotting graph
+plot(out[,1], out[,2], ylab = "Concentration", xlab = "Time", main = "Monostability - Vegetative State", type = "l", xlim = c(0,4), ylim = c(0,1.5))
+lines(out[,1], out[,3], col = "red") # Comment on what you see
+legend("topright", c("ComK","ComS", "Trajectory"), fill = c("black", "red", "orange"))
+#phase plane plot
+lines(out[,2], out[,3], col = "orange") #trajectory
+
+# The concentrations of both ComK and ComS start at 1.0 concentration units and then decrease and intersect with each other at 0.15 concentration units at 2.1 time units, this fixed point is also unstable because the trajectory does not concentrate around it. Then both of the concentrations for ComK and ComS stabilize at 0.15 and 0.50 concentration units respectively.
+
+# Nullclines
+Null <- seq(0,2,0.01)
+
+ComKnull <- ((alphaX/gamma)*Null)-((betaX/gamma)*(Null^n/(Null^n+K^n))) #ComK nullcline
+ComSnull <- (betaY/alphaY)*(L^m/(L^m+Null^m)) #ComS nullcline
+
+plot(Null, ComKnull, ylab = "Concentration", xlab = "Time", main = "Nullcline Plots ComK & ComS", type = "l", xlim = c(0,2), ylim = c(0,2))
+lines(Null, ComSnull, col = "red")
+lines(out[,2], out[,3], col = "orange") #trajectory
+legend("topright", c("ComK","ComS", "Trajectory"), fill = c("black", "red", "orange"))
+
+# Here the concentration lines for both ComK and ComS intersect at 0.55 concentration units at 0.2 time units as a fixed point, and the trajectory shows that it's a stable point because it also intersects at that point. 
+
+#different initial concentrations
+plot(Null, ComKnull, ylab = "Concentration", xlab = "Time", main = "Nullcline Plots ComK & ComS", type = "l", xlim = c(0,2), ylim = c(0,2))
+lines(Null, ComSnull, col = "red")
+lines(out[,2], out[,3], col = "orange") #trajectory 1
+#initial 2
+ComK_int <- 2
+ComS_int <- 2
+y0 <- c(ComK=ComK_int, ComS=ComS_int)
+out <- ode(y=y0,times,func,p)
+lines(out[,2], out[,3], col = "cyan") #trajectory 2
+#initial 3
+ComK_int <- 10
+ComS_int <- 10
+y0 <- c(ComK=ComK_int, ComS=ComS_int)
+out <- ode(y=y0,times,func,p)
+lines(out[,2], out[,3], col = "deeppink") #trajectory 3
+#initial 4
+ComK_int <- 0.5
+ComS_int <- 0.5
+y0 <- c(ComK=ComK_int, ComS=ComS_int)
+out <- ode(y=y0,times,func,p)
+lines(out[,2], out[,3], col = "darkmagenta") #trajectory 4
+legend("topright", c("ComK","ComS", "ComK/ComS Int = 1", "ComK/ComS Int = 2", "ComK/ComS Int = 10", "ComK/ComS Int = 0.5"), fill = c("black", "red", "orange", "cyan", "deeppink", "darkmagenta"))
+
+# Despite changing the initial concentrations, all of the trajectories look similar in which they all begin and concentrate at the fixed point and then they all start to dramatically increase. Because all of the trajectories begin at the fixed point, this fixed point is stable which corresponds to the vegetative state because it is stable and the vegetative state puts the proteins in a stable system with no increase or decrease in concentrations. 
+```
+
+```{r}
+# Part 4
+
+#initial concentration
+ComK_int <- 0
+ComS_int <- 0.5
+#default parameters
+alphaX <- 5 #1/time
+alphaY <- 0.3 #1/time
+betaX <- 6.5 #[]/time
+betaY <- 1 #[]/time
+gamma <- 1 #1/time
+K <- 0.7 #[] a.u.
+L <- 0.2 #[] a.u.
+m <- 2
+n <- 3
+#vector with parameters
+p <- c(gamma=gamma, betaX=betaX, betaY=betaY, alphaX=alphaX, alphaY=alphaY, K=K, L=L, m=m, n=n)
+#initial conditions
+y0 <- c(ComK=ComK_int, ComS=ComS_int)
+#times array
+times <- seq(0,100,0.001)
+#invoking ODE
+out <- ode(y=y0, times, func, p)
+# plotting graph
+plot(out[,1], out[,2], ylab = "Concentration", xlab = "Time", main = "Bistability - Genetic Switch", type = "l", xlim = c(0,100), ylim = c(0,1.25)) #comment on what you see
+lines(out[,1], out[,3], col = "red")
+lines(out[,2], out[,3], col = "orange") #trajectory
+legend("topright", c("ComK","ComS", "Trajectory"), fill = c("black", "red", "orange"))
+
+# Both of the concentrations for both ComK and ComS start off low and then they both dramatically increase and plateau at 0.3 and 1.0 concentration units respectively. Neither of these lines intersect so there are no fixed points. The trajectory also follows the same path as the line of the concentration of ComS but it stops at 1.1 concentration units.
+
+# Nullclines
+Null <- seq(0,2,0.01)
+ComKnull <- ((alphaX/gamma)*Null)-((betaX/gamma)*(Null^n/(Null^n+K^n))) #ComK nullcline
+ComSnull <- (betaY/alphaY)*(L^m/(L^m+Null^m)) #ComS nullcline
+plot(out[,2], out[,3], ylab = "Concentration", xlab = "Time", main = "Nullcline Plots ComK & ComS", type = "l", xlim = c(0,2.5), ylim = c(0,1.25))
+lines(Null, ComKnull, col = "blue")
+lines(Null, ComSnull, col = "red")
+legend("topright", c("ComK Null","ComS Null", "Trajectory"), fill = c("blue", "red", "black"))
+
+#The nullclines cross at 1.0, 0.2, and 0.1 concentration units, but the trajectory concentrates at only the 1.0 concentration units intersection which indicates qualitatively that this point is a stable fixed point whereas the other fixed points are unstable.
+
+#Different initial concentrations
+
+plot(Null, ComKnull, ylab = "Concentration", xlab = "Time", main = "Nullcline Plots ComK & ComS", type = "l", xlim = c(0,2), ylim = c(0,2))
+lines(Null, ComSnull, col = "red")
+lines(out[,2], out[,3], col = "orange") #trajectory 1
+#initial 2
+ComK_int <- 2
+ComS_int <- 2
+y0 <- c(ComK=ComK_int, ComS=ComS_int)
+out <- ode(y=y0,times,func,p)
+lines(out[,2], out[,3], col = "cyan") #trajectory 2
+#initial 3
+ComK_int <- 10
+ComS_int <- 10
+y0 <- c(ComK=ComK_int, ComS=ComS_int)
+out <- ode(y=y0,times,func,p)
+lines(out[,2], out[,3], col = "deeppink") #trajectory 3
+#initial 4
+ComK_int <- 0.5
+ComS_int <- 0.5
+y0 <- c(ComK=ComK_int, ComS=ComS_int)
+out <- ode(y=y0,times,func,p)
+lines(out[,2], out[,3], col = "darkmagenta") #trajectory 4
+legend("topright", c("ComK","ComS", "ComK/ComS Int = 1", "ComK/ComS Int = 2", "ComK/ComS Int = 10", "ComK/ComS Int = 0.5"), fill = c("black", "red", "orange", "cyan", "deeppink", "darkmagenta"))
+
+# The fixed point at 1.0 concentration units corresponds to the vegetative state because it is stable according to the trajectory lines for initial concentrations at 0.5, 1, and 2 these show that the solution is driven to be in the off state of the system. A call might regulate the levels of protein by using other proteins to inhibit them. For example MecA is a protein that inhibits ComK production.
+```
+
+```{r}
+# Part 5
+
+# new ODE formula
+func <- function(t,y,p){
+  ComK <- y[1]
+  ComS <- y[2]
+  with(as.list(p),{
+    dComK <- gamma*ComS + betaX*(ComK^n/(ComK^n+K^n))-alphaX*ComK+0.02*runif(1)
+    dComS <- betaY*(L^m/(ComK^m+L^m))-alphaY*ComS+0.02*runif(1)
+    #where X = ComK [] and Y = ComS []
+    return(list(c(dComK,dComS)))})
+}
+# new parameters
+#initial concentration
+ComK_int <- 1
+ComS_int <- 1
+#default parameters
+alphaX <- 40 #1/time
+alphaY <- 1.5 #1/time
+betaX <- 30 #[]/time
+betaY <- 3 #[]/time
+gamma <- 10 #1/time
+K <- 0.6 #[] a.u.
+L <- 0.47 #[] a.u.'excitable L'
+m <- 3
+n <- 5
+#initial conditions
+y0 <- c(ComK=ComK_int, ComS=ComS_int)
+#times array
+times <- seq(0,100,0.001)
+#vector with parameters
+p <- c(gamma=gamma, betaX=betaX, betaY=betaY, alphaX=alphaX, alphaY=alphaY, K=K, L=L, m=m, n=n)
+#invoking ODE
+out <- ode(y=y0,times,func,p)
+#plotting graph
+plot(out[,1], out[,2], ylab = "Concentration", xlab = "Time", main = "Excitability - Genetic Noise", type = "l", xlim = c(0,100), ylim = c(0,1.5))
+lines(out[,1], out[,3], col = "red")
+
+# I see that both ComK and ComS have different fluctuations of concentrations at around 0.4 and 1.25 concentration units respectively. At time = 85, the concentrations of both ComK and ComS  increase and decrease dramatically and intersect at around 0.65-0.75 concentration units.
+
+#Nullclines
+Null <- seq(0,2,0.01)
+
+ComKnull <- ((alphaX/gamma)*Null)-((betaX/gamma)*(Null^n/(Null^n+K^n))) #ComK nullcline
+ComSnull <- (betaY/alphaY)*(L^m/(L^m+Null^m)) #ComS nullcline
+plot(out[,2], out[,3], ylab = "Concentration", xlab = "Time", main = "Nullcline Plots ComK & ComS", type = "l", xlim = c(0,2.5), ylim = c(0,1.25))
+lines(Null, ComKnull, col = "blue")
+lines(Null, ComSnull, col = "red")
+legend("topright", c("ComK Null","ComS Null", "Trajectory"), fill = c("blue", "red", "black"))
+
+# The nullclines cross at 1.2 concentration units, and the trajectory shows that this is a fixed point because it is extremely concentrated at that intersection. This is the only fixed point.
+
+#Various Noises - High
+func <- function(t,y,p){
+  ComK <- y[1]
+  ComS <- y[2]
+  with(as.list(p),{
+    dComK <- gamma*ComS + betaX*(ComK^n/(ComK^n+K^n))-alphaX*ComK+0.09*runif(1)
+    dComS <- betaY*(L^m/(ComK^m+L^m))-alphaY*ComS+0.09*runif(1)
+    #where X = ComK [] and Y = ComS []
+    return(list(c(dComK,dComS)))})
+}
+# new parameters
+#initial concentration
+ComK_int <- 1
+ComS_int <- 1
+#default parameters
+alphaX <- 40 #1/time
+alphaY <- 1.5 #1/time
+betaX <- 30 #[]/time
+betaY <- 3 #[]/time
+gamma <- 10 #1/time
+K <- 0.6 #[] a.u.
+L <- 0.47 #[] a.u.'excitable L'
+m <- 3
+n <- 5
+#initial conditions
+y0 <- c(ComK=ComK_int, ComS=ComS_int)
+#times array
+times <- seq(0,100,0.001)
+#vector with parameters
+p <- c(gamma=gamma, betaX=betaX, betaY=betaY, alphaX=alphaX, alphaY=alphaY, K=K, L=L, m=m, n=n)
+#invoking ODE
+out <- ode(y=y0,times,func,p)
+
+Null <- seq(0,2,0.01)
+
+ComKnull <- ((alphaX/gamma)*Null)-((betaX/gamma)*(Null^n/(Null^n+K^n))) #ComK nullcline
+ComSnull <- (betaY/alphaY)*(L^m/(L^m+Null^m)) #ComS nullcline
+
+plot(out[,2], out[,3], ylab = "Concentration", xlab = "Time", main = "Nullcline Plots ComK & ComS", type = "l", xlim = c(0,2.5), ylim = c(0,1.25))
+lines(Null, ComKnull, col = "blue")
+lines(Null, ComSnull, col = "red")
+legend("topright", c("ComK Null","ComS Null", "Trajectory High Noise", "Trajectory Low Noise"), fill = c("blue", "red", "black", "cyan"))
+
+func <- function(t,y,p){
+  ComK <- y[1]
+  ComS <- y[2]
+  with(as.list(p),{
+    dComK <- gamma*ComS + betaX*(ComK^n/(ComK^n+K^n))-alphaX*ComK+0.001*runif(1)
+    dComS <- betaY*(L^m/(ComK^m+L^m))-alphaY*ComS+0.001*runif(1)
+    #where X = ComK [] and Y = ComS []
+    return(list(c(dComK,dComS)))})
+}
+# new parameters
+#initial concentration
+ComK_int <- 1
+ComS_int <- 1
+#default parameters
+alphaX <- 40 #1/time
+alphaY <- 1.5 #1/time
+betaX <- 30 #[]/time
+betaY <- 3 #[]/time
+gamma <- 10 #1/time
+K <- 0.6 #[] a.u.
+L <- 0.47 #[] a.u.'excitable L'
+m <- 3
+n <- 5
+#initial conditions
+y0 <- c(ComK=ComK_int, ComS=ComS_int)
+#times array
+times <- seq(0,100,0.001)
+#vector with parameters
+p <- c(gamma=gamma, betaX=betaX, betaY=betaY, alphaX=alphaX, alphaY=alphaY, K=K, L=L, m=m, n=n)
+#invoking ODE
+out <- ode(y=y0,times,func,p)
+
+lines(out[,2], out[,3], col = "cyan")
+
+# With induction to noise, the trajectories are extremely affected. With high noise the trajectory has many loops and lines that are covered over and over again. The low noise causes the trajectory to have an incomplete loop with on one line. 
+```
