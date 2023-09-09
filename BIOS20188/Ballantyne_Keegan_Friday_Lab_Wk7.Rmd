@@ -1,0 +1,672 @@
+---
+title: "Ballantyne_Keegan_Friday_Lab_Wk7"
+author: "Keegan Ballantyne"
+date: "2/24/2022"
+output: html_document
+---
+
+```{r}
+# Part I
+
+# Clear variables
+rm(list = ls())
+
+# Creating the function
+myo <- function(){
+  YpO2 <- pO2/(pO2+p50)
+  return(YpO2)
+}
+```
+
+```{r}
+# Part I
+
+# Modeling of myoglobin O2 dissociation curve
+
+# Parameters
+pO2 <- seq(0, 100, 1) #mmHg
+p50 <- 2.4 #mmHg
+
+# Calling the function
+dissoc <- myo()
+
+# Plotting the function
+plot(pO2, dissoc, type = "l", main = "O2 Myoglobin Dissociation Curve", xlab = "pO2", ylab = "Y(pO2)")
+
+# In this plot we see something like a hyperbolic curve in the myoglobin dissociation curve. This shape is like an upside down L or a J rotated 180 degrees clockwise.
+```
+
+```{r}
+# Part I
+
+# Modeling of myoglobin O2 curves with 5 different p50 values
+# Parameters
+pO2 <- seq(0, 100, 1) #mmHg
+p50_loop <- c(0.5, 1.5, 2.4, 5.0, 10.0) #mmHg
+
+
+# For loop to plot each line on the plot
+plot(0, 0, type = "n", main = "O2 Myoglobin Dissociation Curves by p50 Values", xlab = "pO2", ylab = "Y(pO2)", xlim = c(0,100), ylim = c(0,1))
+for(i in 1:length(p50_loop)){
+  p50 <- p50_loop[i]
+  dissoc <- myo()
+  lines(pO2, dissoc, col=c(i))
+}
+
+# Horizontal Line
+abline(h=0.5, col=c(2), lty=2)
+
+# Legend
+legend("bottomright", legend=c("0.5", "1.5", "2.4 (control)", "5.0", "10.0"), col=c(1, 2, 3, 4, 5), lty=1, cex=0.45)
+
+# Decreasing the p50 values makes the dissociation curve a lot more steeper and shifted to the right. This means that the plateau is longer and the affinity of myoglobin for O2 is higher which makes unloading harder. When p50 increases the effect is opposite, it makes the curve broader and shifted to the left. This means that the plateau is smaller and the affinity for myoglobin for O2 lower which makes it easier for O2 to unload.
+```
+
+```{r}
+# Part II
+
+# Reading in CSV Files
+exp_data <- read.csv("/Users/keeganballantyne/Desktop/Experimental_Data.csv")
+temp_data <- read.csv("/Users/keeganballantyne/Desktop/Temp_data_ExpW22.csv")
+
+# Experimental Data
+
+# Technique I --> assigning each column to a specific variable 
+exp_data_pO2 <- exp_data$data_pO2
+exp_data_y <- exp_data$data_Y
+
+# Plotting w/ technique I
+plot(exp_data_pO2, exp_data_y, type = "l", main = "Experimental Data O2 Hemooglobin Dissociation Curve Technique I", xlab = "pO2", ylab = "Y(pO2) in %", xlim = c(0,105), ylim = c(0,100))
+
+# Horizontal line
+abline(h=50, col=c(2), lty=2)
+
+# Technique II --> creating mini matrices w/ variables from I
+exp_data_2 <- data.frame(x=exp_data_pO2, y=exp_data_y)
+
+# Plotting w/ technique II
+plot(exp_data_2, type = "l", main = "Experimental Data O2 Hemooglobin Dissociation Curve Technique II", xlab = "pO2", ylab = "Y(pO2) in %", xlim = c(0,105), ylim = c(0,100))
+
+# Horizontal line
+abline(h=50, col=c(2), lty=2)
+
+# Technique III --> plotting w/ original matrix
+plot(exp_data[,1], exp_data[,2], type = "l", main = "Experimental Data O2 Hemooglobin Dissociation Curve Technique III", xlab = "pO2", ylab = "Y(pO2) in %", xlim = c(0,105), ylim = c(0,100))
+
+# Horizontal line
+abline(h=50, col=c(2), lty=2)
+
+```
+
+```{r}
+# Part II
+
+# Temperature Data
+
+# Technique I --> assigning each column to a specific variable
+
+# 32 degrees
+temp_data_pO2_32 <- temp_data$data_pO2_32
+temp_data_Y_32 <- temp_data$data_Y_32
+
+# 35 degrees
+temp_data_pO2_35 <- temp_data$data_pO2_35
+temp_data_Y_35 <- temp_data$data_Y_35
+
+# 38 degrees
+temp_data_pO2_38 <- temp_data$data_pO2_38
+temp_data_Y_38 <- temp_data$data_Y_38
+
+# 41 degrees
+temp_data_pO2_41 <- temp_data$data_pO2_41
+temp_data_Y_41 <- temp_data$data_Y_41
+
+# 44 degrees
+temp_data_pO2_44 <- temp_data$data_pO2_44
+temp_data_Y_44 <- temp_data$data_Y_44
+
+# 47 degrees
+temp_data_pO2_47 <- temp_data$data_pO2_47
+temp_data_Y_47 <- temp_data$data_Y_47
+
+# 52 degrees
+temp_data_pO2_52 <- temp_data$data_pO2_52
+temp_data_Y_52 <- temp_data$data_Y_52
+
+# Plotting w/ technique I
+plot(temp_data_pO2_32, temp_data_Y_32, type = "l", main = "Temperature Data O2 Hemooglobin Dissociation Curve Technique I", xlab = "pO2", ylab = "Y(pO2) in %", xlim = c(0,105), ylim = c(0,100))
+lines(temp_data_pO2_35, temp_data_Y_35, type = "l", col = c(3))
+lines(temp_data_pO2_38, temp_data_Y_38, type = "l", col = c(4))
+lines(temp_data_pO2_41, temp_data_Y_41, type = "l", col = c(5))
+lines(temp_data_pO2_44, temp_data_Y_44, type = "l", col = c(6))
+lines(temp_data_pO2_47, temp_data_Y_47, type = "l", col = c(7))
+lines(temp_data_pO2_52, temp_data_Y_52, type = "l", col = c(8))
+
+# Horizontal Line
+abline(h=50, col=c(2), lty=2)
+
+#Legend
+legend("topleft", legend=c("32 degrees", "35 degrees", "38 degrees", "41 degrees", "44 degrees", "47 degrees", "52 degrees"), col=c(1, 3, 4, 5, 6, 7, 8), lty=1, cex=0.8)
+
+# Technique II --> creating mini matrices w/ variables from I
+
+# 32 degrees
+temp_data_32 <- data.frame(x=temp_data_pO2_32, y=temp_data_Y_32)
+
+# 35 degrees
+temp_data_35 <- data.frame(x=temp_data_pO2_35, y=temp_data_Y_35)
+
+# 38 degrees
+temp_data_38 <- data.frame(x=temp_data_pO2_38, y=temp_data_Y_38)
+
+# 41 degrees
+temp_data_41 <- data.frame(x=temp_data_pO2_41, y=temp_data_Y_41)
+
+# 44 degrees
+temp_data_44 <- data.frame(x=temp_data_pO2_44, y=temp_data_Y_44)
+
+# 47 degrees
+temp_data_47 <- data.frame(x=temp_data_pO2_47, y=temp_data_Y_47)
+
+# 52 degrees
+temp_data_52 <- data.frame(x=temp_data_pO2_52, y=temp_data_Y_52)
+
+# Plotting w/ technique II
+plot(temp_data_32, type = "l", main = "Temperature Data O2 Hemooglobin Dissociation Curve Technique II", xlab = "pO2 (torr)", ylab = "Y(pO2) in %", xlim = c(0,105), ylim = c(0,100))
+lines(temp_data_35, type = "l", col = c(3))
+lines(temp_data_38, type = "l", col = c(4))
+lines(temp_data_41, type = "l", col = c(5))
+lines(temp_data_44, type = "l", col = c(6))
+lines(temp_data_47, type = "l", col = c(7))
+lines(temp_data_52, type = "l", col = c(8))
+
+# Horizontal Line
+abline(h=50, col=c(2), lty=2)
+
+# Legend
+legend("topleft", legend=c("32 degrees", "35 degrees", "38 degrees", "41 degrees", "44 degrees", "47 degrees", "52 degrees"), col=c(1, 3, 4, 5, 6, 7, 8), lty=1, cex=0.8)
+
+# Technique III --> plotting w/ original matrix
+plot(temp_data[,1], temp_data[,2], type = "l", main = "Temperature Data O2 Hemoglobin Dissociation Curve Technique III", xlab = "pO2", ylab = "Y(pO2) in %", xlim = c(0,105), ylim = c(0,100))
+lines(temp_data[,3], temp_data[,4], type = "l", col = c(3))
+lines(temp_data[,5], temp_data[,6], type = "l", col = c(4))
+lines(temp_data[,7], temp_data[,8], type = "l", col = c(5))
+lines(temp_data[,9], temp_data[,10], type = "l", col = c(6))
+lines(temp_data[,11], temp_data[,12], type = "l", col = c(7))
+lines(temp_data[,13], temp_data[,14], type = "l", col = c(8))
+
+# Horizontal Line
+abline(h=50, col=c(2), lty=2)
+
+# Legend
+legend("topleft", legend=c("32 degrees", "35 degrees", "38 degrees", "41 degrees", "44 degrees", "47 degrees", "52 degrees"), col=c(1, 3, 4, 5, 6, 7, 8), lty=1, cex=0.8)
+
+# Looking at the 6 curves within the graph it shows that the they gradually become more broader and flatter as temperature increases. This shows that the affininty for Hb for O2 decreases as you increase the temperature. The middle line shows how the percentage of O2 saturation decreases with each increasing line by moving closer to the middle line (except at 47 degrees) at pO2 = 100. 
+```
+
+```{r}
+# Part III
+
+# Independent Binding Function
+
+hemo_ind <- function(){
+  Y <- ((pO2*K)+(3*(pO2^2*K^3))+(3*(pO2^3*K^3))+(pO2^4*K^4))/(((1+4)*(pO2*K))+(6*(pO2^2*K^2))+(4*(pO2^3*K^3))+(pO2^4*K^4))
+  return(Y*100)
+}
+
+# Parameters
+
+pO2 <- seq(0, 105, 0.01) #torr
+K <- 1/10 #torr^-1
+
+# Calling the function
+
+hemo_ind_func <- hemo_ind()
+
+# Plot
+
+plot(exp_data[,1], exp_data[,2], type = "l", main = "Independent Binding O2 Hemoglobin Dissociation Curve", xlab = "pO2 (torr)", ylab = "Y(pO2) in %", xlim = c(0,105), ylim = c(0,100))
+lines(pO2, hemo_ind_func, col=c(2))
+
+# Horizontal line
+abline(h=50, col=c(4), lty=2)
+
+# Legend
+legend("bottomright", legend=c("Control", "Independent Binding", "50% Max saturation", "K=0.075", "K=0.125", "K=0.2"), col=c(1, 2, 4, 3, 6, 7), lty=1, cex=0.8)
+
+# Play with different values of K for best fit graph
+
+# K1
+K <- 0.075 #torr^-1
+# Calling the function
+hemo_ind_func <- hemo_ind()
+# Plotting the curve
+lines(pO2, hemo_ind_func, col=c(3))
+
+# K2
+K <- 0.125 #torr^-1
+# Calling the function
+hemo_ind_func <- hemo_ind()
+# Plotting the curve
+lines(pO2, hemo_ind_func, col=c(6))
+
+# K3
+K <- 0.2 #torr^-1
+# Calling the function
+hemo_ind_func <- hemo_ind()
+# Plotting the curve
+lines(pO2, hemo_ind_func, col=c(7))
+
+# The "best" K that matches the control curve was when K = 0.1. However, the model of independent binding does not accurately display the characteristics of the experimental data. This makes me think that O2 binding in hemoglobin is not independent because not of the lines fit the control line when I increased or decreased K. The shape of the "best" K fit is hyperbolic, or like an upside down L.
+
+# Comparing the curves, the independent binding curve has a longer plateau which indicates that as you decrease pO2 the drop-off of oxygen dissociation is less dramatic. In the control graph, the plateau is much more shorter and has a more dramatic drop-off of oxygen dissociation. The independent binding curve also doesn't reach 100% oxygen association at maximum pO2 whereas the control curve does. 
+```
+
+```{r}
+# Part IV
+
+# Fully Cooperative Binding Function
+
+hemo_simu <- function(){
+  Y <- pO2^4/(pO2^4 + P50^4)
+  return(Y*100)
+}
+
+# Parameters
+
+P50 <- 46.5
+pO2 <- seq(0, 105, 0.01) #torr
+
+# Calling the function
+
+hemo_simu_func <- hemo_simu()
+
+# Plot
+
+plot(exp_data[,1], exp_data[,2], type = "l", main = "Fully-Coop Binding Data O2 Hemoglobin Dissociation Curve", xlab = "pO2 (torr)", ylab = "Y(pO2) in %", xlim = c(0,105), ylim = c(0,100))
+lines(pO2, hemo_simu_func, col=c(2))
+
+# Horizontal line
+abline(h=50, col=c(4), lty=2)
+
+# Legend
+legend("bottomright", legend=c("Control", "Fully-Coop Binding", "50% Max saturation", "P50=55", "P50=35", "P50=40"), col=c(1, 2, 4, 3, 6, 7), lty=1, cex=0.8)
+
+# Play with different values of P50 for best fit graph
+
+# P50 1
+P50 <- 55 #torr^-1
+# Calling the function
+hemo_simu_func <- hemo_simu()
+# Plotting the curve
+lines(pO2, hemo_simu_func, col=c(3))
+
+# P50 2
+P50 <- 35 #torr^-1
+# Calling the function
+hemo_simu_func <- hemo_simu()
+# Plotting the curve
+lines(pO2, hemo_simu_func, col=c(6))
+
+# P50 3
+P50 <- 40 #torr^-1
+# Calling the function
+hemo_simu_func <- hemo_simu()
+# Plotting the curve
+lines(pO2, hemo_simu_func, col=c(7))
+
+# The "best" P50 curve was when P50 = 46.5, as P50 increases it shifts the curve to the right whereas decreasing the P50 curve shifts the curve to the left. The shape of the "best" P50 curve is of a sigmoidal curve like the experimental data. I think that O2 binding in hemoglobin is simultaneous because of how the simulation and experimental data curves are very similar to each other.
+
+# Comparing the two curves I see that the two curves are pretty similar to each other. The fully-coop binding curve has a slighter longer plateau which means that the off-loading of O2 from hemoglobin is not as dramatic as pO2 decreases compared to the experimental data. Additionally, the fully-coop curve has almost the same p50 max saturation compared to the experimental curve. Both curves have similar shape.
+```
+
+```{r}
+# Part V
+
+# Cooperativity and The Hill Equation
+
+hemo_hill <- function(){
+  Y <- pO2^n/(pO2^n + P50^n)
+  return(Y*100)
+}
+
+# Parameters
+n <- 4
+P50 <- 46.5
+pO2 <- seq(0, 105, 0.01) #torr
+
+# Calling the function
+
+hemo_hill_func <- hemo_hill()
+
+# Plot
+
+plot(exp_data[,1], exp_data[,2], type = "l", main = "Experimental Data O2 Hemoglobin Dissociation Curve Technique", xlab = "pO2 (torr)", ylab = "Y(pO2) in %", xlim = c(0,105), ylim = c(0,100))
+lines(pO2, hemo_hill_func, col=c(2))
+
+# Horizontal line
+abline(h=50, col=c(4), lty=2)
+
+# Legend
+legend("bottomright", legend=c("Control", "Hill Co-Eff. Binding (n)", "50% Max saturation", "n=3.5", "n=3", "n=3.8"), col=c(1, 2, 4, 3, 6, 7), lty=1, cex=0.8)
+
+# Play with different values of n for best fit graph
+
+# n 1
+n <- 3.5
+# Calling the function
+hemo_hill_func <- hemo_hill()
+# Plotting the curve
+lines(pO2, hemo_hill_func, col=c(3))
+
+# n 2
+n <- 3
+# Calling the function
+hemo_hill_func <- hemo_hill()
+# Plotting the curve
+lines(pO2, hemo_hill_func, col=c(6))
+
+# n 3
+n <- 3.8
+# Calling the function
+hemo_hill_func <- hemo_hill()
+# Plotting the curve
+lines(pO2, hemo_hill_func, col=c(7)) 
+
+# The "best" n is when n = 3 because it almost fits perfectly on the experimental curve below the 50% max saturation curve. The shape of the "best" fit of n is sigmoidal. This indicates that O2 binding in hemoglobin is cooperative because of how similar the "best" fit and the experimental curves line up. 
+
+# Comparing the two curves I see that the two curves are pretty similar to each other. When the Hill co-efficient = 4 the curve has a slighter longer plateau which means that the off-loading of O2 from hemoglobin is not as dramatic as pO2 decreases compared to the experimental data. Additionally, the Hill co-efficient curve has almost the same p50 max saturation compared to the experimental curve and the off-loading of O2 from hemoglobin is a little stronger at low pO2 compared to the experimental data. Both curves have a similar sigmoidal shape.
+```
+
+```{r}
+# Part VI
+
+# Temperature Sensitivity and the Hill Equation
+
+# 32 Degrees
+
+# Parameters
+n = 3.65
+P50 <- 40.5
+
+# Calling the function
+
+hemo_hill_func <- hemo_hill()
+
+# Plotting function
+plot(temp_data[,1], temp_data[,2], type = "l", main = "Temperature Data O2 Hemoglobin Dissociation Curve", xlab = "pO2", ylab = "Y(pO2) in %", xlim = c(0,105), ylim = c(0,100))
+lines(pO2, hemo_hill_func, col=c(2))
+
+# Horizontal line
+abline(h=50, col=c(4), lty=2)
+
+# Legend
+legend("bottomright", legend=c("Control", "Independent Binding", "50% Max saturation"), col=c(1, 2, 4), lty=1, cex=0.8)
+
+
+# 35 Degrees
+
+# Parameters
+n = 3.7
+P50 <- 40
+
+# Calling the function
+
+hemo_hill_func <- hemo_hill()
+
+# Plotting function
+plot(temp_data[,3], temp_data[,4], type = "l", main = "Temperature Data O2 Hemoglobin Dissociation Curve", xlab = "pO2", ylab = "Y(pO2) in %", xlim = c(0,105), ylim = c(0,100))
+lines(pO2, hemo_hill_func, col=c(2))
+
+# Horizontal line
+abline(h=50, col=c(4), lty=2)
+
+# Legend
+legend("bottomright", legend=c("Control", "Independent Binding", "50% Max saturation"), col=c(1, 2, 4), lty=1, cex=0.8)
+
+
+# 38 Degrees
+
+# Parameters
+n = 3.75
+P50 <- 42.5
+
+# Calling the function
+
+hemo_hill_func <- hemo_hill()
+
+# Plotting function
+plot(temp_data[,5], temp_data[,6], type = "l", main = "Temperature Data O2 Hemoglobin Dissociation Curve Technique III", xlab = "pO2", ylab = "Y(pO2) in %", xlim = c(0,105), ylim = c(0,100))
+lines(pO2, hemo_hill_func, col=c(2))
+
+# Horizontal line
+abline(h=50, col=c(4), lty=2)
+
+# Legend
+legend("bottomright", legend=c("Control", "Independent Binding", "50% Max saturation"), col=c(1, 2, 4), lty=1, cex=0.8)
+
+
+# 41 Degrees
+
+# Parameters
+n = 3.75
+P50 <- 46
+
+# Calling the function
+
+hemo_hill_func <- hemo_hill()
+
+# Plotting function
+plot(temp_data[,7], temp_data[,8], type = "l", main = "Temperature Data O2 Hemoglobin Dissociation Curve Technique III", xlab = "pO2", ylab = "Y(pO2) in %", xlim = c(0,105), ylim = c(0,100))
+lines(pO2, hemo_hill_func, col=c(2))
+
+# Horizontal line
+abline(h=50, col=c(4), lty=2)
+
+# Legend
+legend("bottomright", legend=c("Control", "Independent Binding", "50% Max saturation"), col=c(1, 2, 4), lty=1, cex=0.8)
+
+
+# 44 Degrees
+
+# Parameters
+n = 3.75
+P50 <- 49
+
+# Calling the function
+
+hemo_hill_func <- hemo_hill()
+
+# Plotting function
+plot(temp_data[,9], temp_data[,10], type = "l", main = "Temperature Data O2 Hemoglobin Dissociation Curve Technique III", xlab = "pO2", ylab = "Y(pO2) in %", xlim = c(0,105), ylim = c(0,100))
+lines(pO2, hemo_hill_func, col=c(2))
+
+# Horizontal line
+abline(h=50, col=c(4), lty=2)
+
+# Legend
+legend("bottomright", legend=c("Control", "Independent Binding", "50% Max saturation"), col=c(1, 2, 4), lty=1, cex=0.8)
+
+
+# 47 Degrees
+
+# Parameters
+n = 4
+P50 <- 49
+
+# Calling the function
+
+hemo_hill_func <- hemo_hill()
+
+# Plotting function
+plot(temp_data[,11], temp_data[,12], type = "l", main = "Temperature Data O2 Hemoglobin Dissociation Curve Technique III", xlab = "pO2", ylab = "Y(pO2) in %", xlim = c(0,105), ylim = c(0,100))
+lines(pO2, hemo_hill_func, col=c(2))
+
+# Horizontal line
+abline(h=50, col=c(4), lty=2)
+
+# Legend
+legend("bottomright", legend=c("Control", "Independent Binding", "50% Max saturation"), col=c(1, 2, 4), lty=1, cex=0.8)
+
+
+# 52 Degrees
+
+# Parameters
+n = 2.7
+P50 <- 55.75
+
+# Calling the function
+
+hemo_hill_func <- hemo_hill()
+
+# Plotting function
+plot(temp_data[,13], temp_data[,14], type = "l", main = "Temperature Data O2 Hemoglobin Dissociation Curve Technique III", xlab = "pO2", ylab = "Y(pO2) in %", xlim = c(0,105), ylim = c(0,100))
+lines(pO2, hemo_hill_func, col=c(2))
+
+# Horizontal line
+abline(h=50, col=c(4), lty=2)
+
+# Legend
+legend("bottomright", legend=c("Control", "Independent Binding", "50% Max saturation"), col=c(1, 2, 4), lty=1, cex=0.8)
+
+# Alter the P50 and n values to fit each simulated curve with the real data for each of the temperature plots
+
+# 3 new vectors
+
+P50_array <- c(40.5, 40, 42.5, 46, 49, 49, 55.75)
+n_array <- c(3.65, 3.7, 3.75, 3.75, 3.75, 4, 2.7)
+temp_array <- c(32, 35, 38, 41, 44, 47, 52)
+
+# 3 plots w/ temperature
+
+# Plot with temperature and P50
+fit <- lm(P50_array ~ temp_array)
+intercept <- fit$coefficient[[1]]
+slope <- fit$coefficient[[2]]
+R2 <- summary(fit)$r.squared
+print(intercept)
+print(slope)
+print(R2)
+
+plot(temp_array, P50_array, xlab = "Temperature", ylab = "P50", main = "Temperature vs. P50")
+abline(fit, col=c(2))
+
+# Plot with temperature and n
+fit <- lm(n_array ~ temp_array)
+intercept <- fit$coefficient[[1]]
+slope <- fit$coefficient[[2]]
+R2 <- summary(fit)$r.squared
+print(intercept)
+print(slope)
+print(R2)
+
+plot(temp_array, n_array, xlab = "Temperature", ylab = "n value", main = "Temperature vs. n")
+abline(fit, col=c(2))
+
+# This linear fit for P50 shows that there is a direct relationship between temperature and P50. As temperature increases, P50 increases too. n and temperature show an inverse relationship according to the best fit line, so this shows that as temperature increases n decreases too.
+```
+
+```{r}
+# Part VII
+
+# pH values array
+data_pH <- c(7.61, 7.36, 7.15, 6.92)
+
+# P50 values array
+data_P50 <- c(19.1, 23.4, 30.9, 40.7) #torr
+
+# Plot P50 vs. pH
+fit <- lm(data_P50 ~ data_pH)
+intercept <- fit$coefficient[[1]]
+slope <- fit$coefficient[[2]]
+R2 <- summary(fit)$r.squared
+print(intercept)
+print(slope)
+print(R2)
+
+plot(data_P50, data_pH, xlab = "P50 (torr)", ylab = "pH", main = "P50 vs. pH")
+abline(fit, col=c(2))
+
+pH <- 7.61
+P50 <- (-31.56034*pH)+257.6531
+n <- 2.8
+
+# Plotting & Choosing pH and P50 values
+
+# pH 1
+pH <- 7.61
+P50 <- (-31.56034*pH)+257.6531
+n <- 2.8
+pO2 <- seq(0, 150, 0.01)
+
+# Calling function
+
+hemo_hill_func <- hemo_hill()
+
+# Plot w/ pH 1
+
+plot(pO2, hemo_hill_func, type = "l", main = "Hemoglobin O2 Dissociation Curves by pH", xlab = "pO2", ylab = "Y(pO2) in %", xlim = c(0,150), ylim = c(0,100))
+legend("bottomright", legend=c("7.61", "7.36", "7.15", "6.92", "Myoglobin"), col=c(1, 2, 3, 4, "peru"), lty=1)
+abline(v=40, col=c("darkorchid4"), lty=2)
+abline(v=100, col=c("darkorchid4"), lty=2)
+
+# pH 2
+pH <- 7.36
+P50 <- (-31.56034*pH)+257.6531
+n <- 2.8
+pO2 <- seq(0, 150, 0.01)
+
+# Calling function
+
+hemo_hill_func <- hemo_hill()
+
+# Plot w/ pH 2
+
+lines(pO2, hemo_hill_func, col=c(2))
+
+# pH 3
+pH <- 7.15
+P50 <- (-31.56034*pH)+257.6531
+n <- 2.8
+pO2 <- seq(0, 150, 0.01)
+
+# Calling function
+
+hemo_hill_func <- hemo_hill()
+
+# Plot w/ pH 3
+
+lines(pO2, hemo_hill_func, col=c(3))
+
+# pH 4
+pH <- 6.92
+P50 <- (-31.56034*pH)+257.6531
+n <- 2.8
+pO2 <- seq(0, 150, 0.01) #mmHg
+
+# Calling function
+
+hemo_hill_func <- hemo_hill()
+
+# Plot w/ pH 4
+
+lines(pO2, hemo_hill_func, col=c(4))
+
+# Myoglobin
+pO2 <- seq(0, 150, 0.01) #mmHg
+p50 <- 2.4 #mmHg
+
+# Calling the function
+
+dissoc <- myo()*100
+
+# Plot w/ myoglobin
+
+lines(pO2, dissoc, type = "l", col=c("peru"))
+
+# Looking at the curves I see that as pH decreases, the plateau gets smaller and smaller and O2 dissociation drops off more dramatically when pO2 decreases. We see that when pO2 = 40 there is a dramatic decrease of O2 saturation as pH decreases. The steepness of the curve increases as you increase pH so it shows that pH may have a direct relationship
+
+# pH does have the same affect in both locations but when pO2 = 100 this affect is not as dramatic compared to when pO2 = 40. This means that pH has a greater affect on O2 unloading compared to O2 loading. 
+
+# Looking at the different pO2s, hemoglobin would have a greater role in delivering O2 to muscles in arterial blood because of the plateaus of all of the curves with the different pHs. This allows the body not be crippled by any changes in pH in arterial blood in delivering O2 to muscles. Myoglobin would most likely have a bigger role in delivering O2 in muscle cells in venous blood because of it's long plateau.
+```

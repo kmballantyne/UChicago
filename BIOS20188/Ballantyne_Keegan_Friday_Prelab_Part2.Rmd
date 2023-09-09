@@ -1,0 +1,42 @@
+---
+title: "Ballantyne_Keegan_Friday_Prelab_Part2"
+author: "Keegan Ballantyne"
+date: "1/18/2022"
+output: html_document
+---
+
+```{r}
+#Coin Toss Setup
+numberflip <- 10
+flipresult <- rep(0, numberflip)
+
+for (i in 1:numberflip){
+  x <- runif(1)
+  if(x < 0.5){
+    flipresult[i] <- 0 #heads
+  }
+  else{
+    flipresult[i] <- 1 #tails
+  }
+}
+mean(flipresult) #Average of the coinflip
+
+#Plotting
+plot(flipresult, type = "o", xlab = "Number of Coin Flips", ylab = "Heads or Tails", ylim = c(-0.1, 1.1), xlim = c(0, numberflip))
+abline(h = mean(flipresult), col = "darkgreen")
+legend("topleft", bty = "n", legend = paste("Mean=",mean(flipresult)), text.col = c(2))
+
+#Question 4
+#The size of the flip result array would be 10.
+
+#Question 5
+#The average value of the flip result given 10 flips was calculated to be 0.3 in the first run. It is not 0.5. In the second and third runs the average values were 0.5 and 0.6 respectively. The second run had 0.5 whereas the third run did not.
+
+#Question 6
+#The points on the graph are either 1 or 0 with the mean line shifting at different points in the graph. The profile of the graph changes as I rerun the code 3 times with different lines of best fit (which were 0.6, 0.3, and 0.5 respectively). At different numbers of flips the result randomly switches from 1 to 0 or 0 to 1 or sometimes remains the same value.
+
+#Question 7
+#Larger number of coin flips give a mean closer to 0.5 because there are more and more values that would be calculated to 0.5 if we were to find the mean by adding up all of the results and dividing by the number of coinflips. This is the law of large numbers because the chance of getting heads or tails is a 50/50% chance and so the number of heads and tails should be almost equal.
+
+```
+

@@ -1,0 +1,187 @@
+---
+title: "Ballantyne_Keegan_Friday_Lab_Part1"
+author: "Keegan Ballantyne"
+date: "1/21/2022"
+output: html_document
+---
+
+```{r}
+#Na Permeability
+rm(list = ls())
+#Parameters
+PNa <- 100
+PK <- 20
+PCl <- 5
+Na0 <- 460 #mM
+K0 <- 10 #mM
+Cl0 <- 540 #mM
+Nai <- 50 #mM
+Ki <- 400 #mM
+Cli <- 100 #mM
+R <- 8.314 #J/mol-K
+T <- 310 #K
+F <- 96500 #coul/mol
+
+#Function
+GHK_func <- function(){
+  MemPot <- ((R*T)/F)*log(((PNa*Na0)+(PK*K0)+(PCl*Cli))/((PNa*Nai)+(PK*Ki)+(PCl*Cl0)))
+  return(MemPot*1000)
+}
+
+#Call Function
+ERev <- GHK_func()
+ERev
+
+#8. How did the membrane potential change from the resting membrane potential to the action potential peak? Is the membrane potential more positive (depolarized) or is it more negative (hyperpolarized)? Briefly discuss the biology – what is happening?
+#The membrane potential changed from the resting membrane potential to the action potential because the threshold was reached from an outside stimulus. Reaching this threshold causes the voltage-gated ion channels to open and allows a rush of Na+ to rush inside of the cell which causes depolarization -- which is indicated by the positive answer below.
+```
+
+```{r}
+#K Permeability
+#Parameters
+PNa <- 1
+PK <- 100
+PCl <- 5
+Na0 <- 460 #mM
+K0 <- 10 #mM
+Cl0 <- 540 #mM
+Nai <- 50 #mM
+Ki <- 400 #mM
+Cli <- 100 #mM
+R <- 8.314 #J/mol-K
+T <- 310 #K
+F <- 96500 #coul/mol
+
+#Call Function
+ERev <- GHK_func()
+ERev
+
+#9. How did the membrane potential change from the resting membrane potential to the afterhyperpolarized state? Is the membrane potential more positive (depolarized) or is it more negative (hyperpolarized)? Briefly discuss the biology – what is happening?
+#The resting membrane potential changed would have had a sharp increase being more depolarized due to the Na+ channel gates opening and letting Na+ rush into the cell. Eventually, the Na+ sodium gates close and the K+ gates open in order for the cell to repolarize itself, but then it goes into a state of afterhyperpolarization because lots of K+ ion are rushing into the cell and depolarizing the cell and decreasing the membrane potential. This state would have the membrane potential to be more negative. 
+```
+
+```{r}
+#Range of K Permeability
+#Parameters
+PNa <- 1
+PK <- seq(1, 1000, 10)
+PCl <- 5
+Na0 <- 460 #mM
+K0 <- 10 #mM
+Cl0 <- 540 #mM
+Nai <- 50 #mM
+Ki <- 400 #mM
+Cli <- 100 #mM
+R <- 8.314 #J/mol-K
+T <- 310 #K
+F <- 96500 #coul/mol
+
+#Call Function
+ERev <- GHK_func()
+
+#Plot Function
+plot(PK, ERev, type = "o", xlab = "Permeability of K" , ylab = "Membrane Potential", main = "Membrane Potential vs. Permeability of K")
+
+#10. What do you notice about how the membrane potential changes as K+ permeability is increased? Does the membrane potential steadily change or does it seem to approach a particular value?
+#The membrane potential steadily changes and decreases at first and then reaches a plateau of around -100 mV as the permeability of K+ increases.
+
+#11. Given that the Nernst potential for K+ under these conditions is -98.523 mV, is this similar to the value that the membrane potential appears to approach? In a few sentences, explain what is going on.
+#Yes, this value is similar to the value that the membrane potential approaches on the graph. This trend happens because of the increasing permeability of K+. Increasing this permeability means that it becomes more easier for K+ to pass through the membrane. When more K+ passes into the cell through the membrane it makes the membrane potential more hyperpolar. Eventually, this equilibrium will reach the highest potential as an equal amount of K+ is entering the cell as much as it is leaving the cell and there is no more net movement. 
+```
+
+```{r}
+#Both Increase of K and Na Permeability
+#Parameters
+PNa <- 100
+PK <- 81
+PCl <- 5
+Na0 <- 460 #mM
+K0 <- 10 #mM
+Cl0 <- 540 #mM
+Nai <- 50 #mM
+Ki <- 400 #mM
+Cli <- 100 #mM
+R <- 8.314 #J/mol-K
+T <- 310 #K
+F <- 96500 #coul/mol
+
+#Call Function
+ERev <- GHK_func()
+ERev
+
+#12. How did your membrane potential change from previous runs? Describe what is going on in a couple of sentences. Is the membrane potential more positive (depolarized) or more negative (hyperpolarized)? If increasing K+ permeability alone is hyperpolarization, why is it depolarizing when K+ and Na+ permeability are both increased at the same time? (Hint: Nernst potential K+=-98.523 mV, Na+=59.271 mV)
+# Yes, the membrane potential changed from the previous runs. Due to the permeability of both Na+ and K+, they are both simultaneously passing through the membrane and flowing inside and outside of the cell. Since Na+ has a higher overall concentration within this model for the equation, It makes logical sense that the equilibrium Nernst potential of Na+ would cause the overall membrane potential to shift in a more positive direction because more Na+ ion would flow into the cell.
+```
+
+```{r}
+#Concentration of K
+#Parameters
+PNa <- 1
+PK <- 20
+PCl <- 5
+Na0 <- 460 #mM
+K0 <- seq(1, 1000, 1) #mM
+Cl0 <- 540 #mM
+Nai <- 50 #mM
+Ki <- 400 #mM
+Cli <- 100 #mM
+R <- 8.314 #J/mol-K
+T <- 310 #K
+F <- 96500 #coul/mol
+
+#Call Function
+ERev <- GHK_func()
+ERev
+
+#Plot and Log Plot
+#Normal
+plot(ERev, type = "o", xlab = "Concentration of K (mM)", ylab = "Membrane Potential", main = "Membrane Potential vs. Concentration of Outside K")
+#Log
+plot(log="x", ERev, type = "o", xlab = "Concentration of K (mM)", ylab = "Membrane Potential", main = "Membrane Potential vs. Concentration of Outside K (Log)")
+
+#13. Give a general description of what you see going on in these 2 graphs. Overall, what happens to the membrane potential when external K+ is decreased? How much (a lot, or a little) does the membrane potential change when K+ is decreased 10-fold (from 1000mM to 100mM)? How much (a lot or a little?) does Erev change when Ko is decreased from 10mM to 1mM?
+#The membrane potential changes a lot when the concentration of K+ decreases 10-fold. At 1000 mM of K+ the membrane potential is at around 20 mV and when the concentration decreases 10-fold the membrane potential drops down to around -40 mV which is a net change of 60 mV. Erev has little change when Ko is changed from 10 to 1 mM, the membrane potential is still at ~60 mV when this change happens. Overall this means that as we keep all other permeabilities and concentrations the same for Ki and other ions, the membrane potential increases as you increase the outside concentration of K+ and decreases when you decrease the outside concentration of K+.
+```
+
+```{r}
+#Nernst & GHK equation comparison
+#Parameters
+PNa <- 1
+PK <- 20
+PCl <- 5
+Na0 <- 460 #mM
+K0 <-  seq(1, 1000, 1) #mM
+Cl0 <- 540 #mM
+Nai <- 50 #mM
+Ki <- 400 #mM
+Cli <- 100 #mM
+R <- 8.314 #J/mol-K
+T <- 310 #K
+F <- 96500 #coul/mol
+#Function
+Nernst_func <- function(){
+  EquiPot <- ((R*T)/F)*log((K0/Ki))
+  return(EquiPot*1000)
+}
+#Call Function
+NernstK <- Nernst_func()
+NernstK
+
+#Plot Nernst and GHK Functions
+#Normal
+plot(K0, NernstK, type="l", col=c(1), xlab = "External Concentration of K (mM)", ylab = "Reversal Potential (mV)", main = "Change in Potassium Concentration")
+points(K0, ERev, type="l", col=c(2))
+legend("topleft", legend = c("GHK","Nernst"), fill=c(1,2), lwd = 1,cex = 0.5)
+#Log
+plot(log="x", NernstK, type="l", col=c(1), xlab = "External Concentration of K (mM)", ylab = "Reversal Potential (mV)", main = "Change in Potassium Concentration (Log)")
+points(K0, ERev, type="l", col=c(2))
+legend("topleft", legend = c("GHK","Nernst"), fill=c(1,2), lwd = 1,cex = 0.5)
+
+#14. Describe and list 2 differences between GHK and Nernst equation. 
+#The Nernst equation calculates the equilibrium for only one ion within the cell whereas the GHK equation calculates membrane potential which incorporates multiple ions within its equation.
+#The Nernst equation does not include a permeability factor or multiplier within its equation which affects how much an ion goes in or out of a membrane whereas the GHK equation factors in the permeability in its equation.
+
+#15. What do you see? Why does the membrane potential deviate from Nernst potential at low K+ concentrations? (THINK!!)
+# For the GHK line there is a linear relationship as the external concentration of Ko increases on a logarithmic scale and the membrane potential. Membrane potential increases when Ko increases and decreases when Ko decreases. This is a direct relationship. The membrane potential deviates from the Nernst potential at low K+ concentrations because the Nernst equation shows the K+ ion at equilibrium because that's what the equation calculates. This then shows that the Reversal Potential eventually reaches equilibrium after a certain concentration of K+, which is at ~50 mM indicated by the flattening of the curve in the graph. This reversal potential equilibrium for the low concentration of K+ is calculated to be at around ~-60 mV.
+```
+

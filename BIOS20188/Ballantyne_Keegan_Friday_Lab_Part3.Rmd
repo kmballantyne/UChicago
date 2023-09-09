@@ -1,0 +1,80 @@
+---
+title: "Ballantyne_Keegan_Friday_Lab_Part3"
+author: "Keegan Ballantyne"
+date: "1/26/2022"
+output: html_document
+---
+
+```{r}
+#Sequence 
+PNa <- seq(1, 50, 2)
+PK <- 20
+PCl <- 5
+Na0 <- 460 #mM
+K0 <- 10 #mM
+Cl0 <- 540 #mM
+Nai <- 50 #mM
+Ki <- 400 #mM
+Cli <- 100 #mM
+R <- 8.314 #J/mol-K
+T <- 310 #K
+F <- 96500 #coul/mol
+
+#Function
+GHK_func <- function(){
+  MemPot <- ((R*T)/F)*log(((PNa*Na0)+(PK*K0)+(PCl*Cli))/((PNa*Nai)+(PK*Ki)+(PCl*Cl0)))
+  return(MemPot*1000)
+}
+
+#Call Function
+ERev <- GHK_func()
+
+#Plot Function
+plot(PNa, ERev, type = "o", xlab = "Permeability of Na", ylab = "Membrane Potential", main = "Membrane Potential vs. Permeability of Na")
+```
+
+```{r}
+#Simulation of Ions and Sequence
+
+endtime <- 100
+state <- rep(0, endtime)
+
+for(t in 1:length(ERev)){
+  if(ERev[t] > -20){
+    prob_1 <- 0.02
+    prob_2 <- 0.93
+  }
+  else if(ERev[t] < -20){
+    prob_1 <- 0.76
+    prob_2 <- 0.12
+  }
+
+
+  for (i in 1:endtime){
+    x <- runif(1)
+    if(state[i] == 0){
+      if(x <= prob_2){
+        state[i+1] <- 0 #closed
+      }
+      else{
+      state[i+1] <- 1 #open
+      }
+    }  
+    else if (state[i] == 1){
+      if (x <= prob_1){
+        state[i+1] <- 0
+      }
+      else{
+        state[i+1] <- 1
+      }
+    } 
+  }
+  avg = mean(state)
+  plot(state, type = "o", xlab = "Number of States", ylab = "Open or Closed", main = "Ion Channels Simulation", ylim = c(-0.1, 1.1), xlim = c(0, endtime))
+  abline(h=avg, col=c(2), lty=2)
+  legend("topleft", bty = "n", legend = paste("Mean=",mean(state)), text.col = c(2))
+}
+
+#22. Please comment on what you see!
+#These graphs fluctuate between how much the channels are opened or closed due to the different values of the means that are produced. At first it shows a mean that indicates that the channels are opened and closed in equal amounts of time and then it fluctuates to the channel being opened more often than it is closed in some of the graphs. This is due to the increased permeability of Na allows for the ion channel to have a higher probability of staying open as it fluctuates throughout the following graphs. In the first graph in the above cell, we see that as the permeability of Na increases, the membrane potential also increases steadily. The increase of permeability of Na allows for more Na ions to flow into the cell and cause the cell to become more depolarized which increases the membrane potential. 
+```

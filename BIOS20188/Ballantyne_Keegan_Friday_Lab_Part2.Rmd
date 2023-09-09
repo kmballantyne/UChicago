@@ -1,0 +1,80 @@
+---
+title: "Ballantyne_Keegan_Friday_Lab_Part2"
+author: "Keegan Ballantyne"
+date: "1/25/2022"
+output: html_document
+---
+
+```{r}
+#Random Number & Ion Channels
+
+endtime <- 100
+state <- rep(0, endtime)
+
+for (i in 1:endtime){
+  x <- runif(1)
+  if(x < 0.5){
+    state[i] <- 0 #closed
+  }
+  else{
+    state[i] <- 1 #open
+  }
+}
+avg <- mean(state) #Average of the coinflip
+
+plot(state, type = "o", xlab = "Number of States", ylab = "Open or Closed", main = "Ion Channels Simulation", ylim = c(-0.1, 1.1), xlim = c(0, endtime))
+abline(h=avg, col=c(2), lty=2)
+legend("topleft", bty = "n", legend = paste("Mean=",mean(state)), text.col = c(2))
+
+#16.) Does your plot look anything like the trace below? Describe why or why not? What are the features of the trace below? Compare the features of your generated trace with the trace below. 
+#My graph does not look like the traces that is shown because there are almost an equal 50/50% amount of points that show that the channel is open or closed. Also the mean is 0.48 which is very close to 0.5 which is the indicated mean that shows that the states were open and closed in equal amount of times. The trace below shows that the channel appears to be more closed than it is open which shows that there is a higher probability of the channel being closed. Although both have points where the channel is open or closed my trace shows that these events happened in an equal amount of times while the example trace shows that the channel was more likely to be in the closed state instead of the open state.
+
+#17.) Is your initial hypothesis correct? -- The channel opening and closing was a simple random event, like a coin toss. What have we left out?
+#Yes, My hypothesis was correct on the fact that the mean value would be close to 0.5 because the channel has a 50/50 chance of being open or closed like a coin toss having a 50/50 chance of it being heads or tails. What we may have left out is other independent variables such as concentration of the ions, voltage, and time that could each individually affect whether the channel is opened or closed. Each of these independent variables could have different % chances that would cause the channel to be either opened or closed.
+```
+
+```{r}
+#Ion Channels Simulation
+
+endtime <- 100
+state <- rep(0, endtime)
+
+for (i in 1:endtime){
+  x <- runif(1)
+  if(state[i] == 0){
+    if(x <= 0.85){
+      state[i+1] <- 0 #closed
+    }
+    else{
+    state[i+1] <- 1 #open
+    }
+  }  
+  else if (state[i] == 1){
+    if (x <= 0.85){
+      state[i+1] <- 0
+    }
+    else{
+      state[i+1] <- 1
+    }
+  } 
+}
+
+avg <- mean(state)
+
+#Plotting
+plot(state, type = "o", xlab = "Number of States", ylab = "Open or Closed", main = "Ion Channels Simulation", ylim = c(-0.1, 1.1), xlim = c(0, endtime))
+abline(h=avg, col=c(2), lty=2)
+legend("topleft", bty = "n", legend = paste("Mean=",mean(state)), text.col = c(2))
+
+#18. Play with different probability assignments, what do you see in the behavior of the ion channel? Can you get your simulation to look like a realistic ion channel? What probabilities worked the best? Please explain the rationale with probability assignment.
+#Messing with the probability assignments, I found that if I were to increase the probabilities in both lines 45 and 53 I would have a trace that would be similar to a realistic ion channel where it predominantly stays in a closed state most of the time. If I were to have both probabilities low, then the channel would be in an open state most of the time. If I set one probability to be high and the other probability to be low (whether these values are in lines 45 or 53 does not seem to have any significance) then the open and closed states move tend to happen in a random amount of times because the mean fluctuates between high values, low values, and 0.5. This shows that this has a seemingly randomized affect on how much the channel is closed or open.
+  
+#19. Discuss how a depolarization of the membrane would relate to the opening/closing of Na+ channels and how this would relate to our mathematical model.
+#The depolarization of the membrane would relate to the opening of the Na+ channels because the GHK equation would calculate the membrane potential to be more positive. This is because the permeability of Na+ greatly increases when the Na+ channels are all open. This would allow for a greater amount of Na+ to flow into the cell and cause depolarization. This relates to the mathematical model because it increases the permeability multiplier for Na+ in the GHK equation, once the cell membrane has a lot of opened Na+ ion channels, this increases the permeability of Na+ and the permeability multiplier of Na+ in the GHK equation, and thus causes depolarization because more Na+ ions can flow into the cell which increases membrane potential.
+
+#20. What do you think is missing in this model? What would you include to make the description more realistic? Think about the duration of the channel being open or closed as well as adding a stimulus.
+#3 things would make the model more realistic: time, the voltage of the stimulus, and adding or incorporating more ions as variables in the GHK equation. I would include these factors because both the duration of when the channels are opened or closed is important due to the time-dependent function of the activation and inactivation gates (i.e. when the channels would begin to close). Also, these gates are opened and closed simultaneously in real life and this model and program doesn't reflect that simultaneous effect and instead shows the opening and closing in steps. This model also doesn't include what causes the channels to open in the first place and what that threshold needs to be in order to cause depolarization.
+
+#21. Please discuss the implications of the microscopic scale (single ion channel) representing a bulk property (change in membrane potential) in initiating and propagating an action potential. (Hint. How can you sum up all the single ion channels that have stochastic (independent) behavior and get a bulk property?)
+#The threshold has an all or nothing effect on the cell, so when one of the ion channels open it has a local spread that stimulates other ion channels to open with a stochastic change in charge. This threshold hold would cause more and more channels to open that are nearby locally and let in a rush of ions inside of the membrane. This allows for the summation of all of the single ion channels because they all influence the local changes which then spreads all the way across the membrane. 
+```

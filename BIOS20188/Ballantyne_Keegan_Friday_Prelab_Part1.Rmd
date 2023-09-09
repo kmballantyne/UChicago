@@ -1,0 +1,44 @@
+---
+title: "Ballantyne_Keegan_Friday_Prelab_Part1"
+author: "Keegan Ballantyne"
+date: "1/18/2022"
+output: html_document
+---
+
+```{r}
+#Part 1
+
+rm(list = ls())
+#Parameters
+PNa <- 1
+PK <- 20
+PCl <- 5
+Na0 <- 460 #mM
+K0 <- 10 #mM
+Cl0 <- 540 #mM
+Nai <- 50 #mM
+Ki <- 400 #mM
+Cli <- 100 #mM
+R <- 8.314 #J/mol-K
+T <- 310 #K
+F <- 96500 #coul/mol
+#Function
+GHK_func <- function(){
+  MemPot <- ((R*T)/F)*log(((PNa*Na0)+(PK*K0)+(PCl*Cli))/((PNa*Nai)+(PK*Ki)+(PCl*Cl0)))
+  return(MemPot*1000)
+}
+#Call Function
+Erev <- GHK_func()
+Erev
+#Question 1:
+#We call this membrane potential the reversal potential. This involves all of the ions present in the situation.
+
+#Question 2: 
+#Erev is calculated to be -59.47 V.
+
+#Question 3:
+#We call this value of the membrane potential to be the resting potential.
+```
+
+
+
