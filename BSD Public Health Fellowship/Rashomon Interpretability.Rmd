@@ -1,0 +1,1446 @@
+---
+title: "Rashomon Quartet Vignette"
+author: "Keegan Ballantyne"
+date: "2023-07-26"
+output: html_document
+---
+
+### Compiled Document of ML Interpretability
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Rashomon Quartet
+
+```{r}
+set.seed(1568)
+
+library(tidymodels)
+library(DALEXtra)
+library(quartets)
+library(randomForest)
+library(ranger)
+library(iml)
+library(ggplot2)
+library(caret)
+
+rec <- recipe(y ~ ., data = rashomon_quartet_train)
+
+```
+
+```{r}
+## Regression Tree --> mlr3 version of regression tree custom model for shapr
+
+wf_tree <- workflow() |>
+  add_recipe(rec) |>
+  add_model(
+    decision_tree(mode = "regression", engine = "rpart",
+                  tree_depth = 3, min_n = 250)
+  )
+
+tree <- fit(wf_tree, rashomon_quartet_train)
+exp_tree <- explain_tidymodels(
+  tree, 
+  data = rashomon_quartet_test[, -1], 
+  y = rashomon_quartet_test[, 1],
+  verbose = FALSE, 
+  label = "decision tree")
+
+```
+
+```{r}
+## Linear Model --> use glm from iml package or lm natively for shapr
+
+wf_linear <- wf_tree |>
+  update_model(linear_reg())
+
+lin <- fit(wf_linear, rashomon_quartet_train) # could this be the linear fitted model?
+exp_lin <- explain_tidymodels(
+  lin, 
+  data = rashomon_quartet_test[, -1], 
+  y = rashomon_quartet_test[, 1],
+  verbose = FALSE, 
+  label = "linear regression")
+
+```
+
+```{r}
+## Random Forest --> ranger natively
+
+wf_rf <- wf_tree |>
+  update_model(rand_forest(mode = "regression", 
+                           engine = "randomForest", 
+                           trees = 100))
+
+rf <- fit(wf_rf, rashomon_quartet_train)
+exp_rf <- explain_tidymodels(
+  rf, 
+  data = rashomon_quartet_test[, -1], 
+  y = rashomon_quartet_test[, 1],
+  verbose = FALSE, 
+  label = "random forest")
+
+```
+
+```{r}
+## Neural Network --> mlr3 custom model for shapr
+
+library(neuralnet)
+nn <- neuralnet(
+  y ~ ., 
+  data = rashomon_quartet_train, 
+  hidden = c(8, 4), 
+  threshold = 0.05)
+
+exp_nn <- explain_tidymodels(
+  nn, 
+  data = rashomon_quartet_test[, -1], 
+  y = rashomon_quartet_test[, 1],
+  verbose = FALSE, 
+  label = "neural network")
+```
+
+```{r}
+
+mp <- map(list(exp_tree, exp_lin, exp_rf, exp_nn), model_performance)
+tibble(
+  model = c("Decision tree", "Linear regression", "Random forest", "Neural Network"),
+  R2 = map_dbl(mp, ~.x$measures$r2),
+  RMSE = map_dbl(mp, ~.x$measures$rmse)
+  ) |>
+  knitr::kable(digits = 2)
+
+# Calculate the RMSE on xgboost
+# Cross validation calculated XGB RMSE testing data ~ 0.34 
+# Slightly more accurate compared to other models but relatively the same - see code under "XGBoost (XGB)"
+```
+
+```{r}
+
+pd_tree <- model_profile(exp_tree, N=NULL)
+pd_lin <- model_profile(exp_lin, N=NULL)
+pd_rf <- model_profile(exp_rf, N=NULL)
+pd_nn <- model_profile(exp_nn, N=NULL)
+plot(pd_tree, pd_nn, pd_rf, pd_lin)
+
+```
+
+```{r}
+## Converting tible to dataframe
+## Converting tible to matrix
+
+dframe_rash_test <- as.data.frame(rashomon_quartet_test)
+dframe_rash_train <- as.data.frame(rashomon_quartet_train)
+
+mat_rash_test <- as.matrix(rashomon_quartet_test)
+mat_rash_train <- as.matrix(rashomon_quartet_train) 
+
+```
+
+### Random Forest
+
+# Use rf_rash2 for ranger --> SHAP plot native model
+# implement xgboost natively for shapr
+# implement lm natively for shapr
+# implement regression tree custom for shapr
+# implement neural network custom for shapr
+
+```{r}
+
+rash_formula_train <- model.matrix(y ~ ., data = dframe_rash_train)[, -1]  # -1 to get rid of (Intercept)
+rash_formula_test <- model.matrix(y ~ ., data = dframe_rash_test)[, -1]
+
+rf_rash1 <- randomForest(x = dframe_rash_train[, 2:4], y = dframe_rash_train$y)
+
+rf_rash2 <- ranger(y ~ ., data = dframe_rash_train)
+
+rf_rash3 <- randomForest(x = rash_formula_test, y = rashomon_quartet_test$y)
+
+```
+
+```{r}
+# Utilizing built-in feature importance function --> only specific to randomForest algorithm
+# Does not subtract permuted error from loss function!
+
+randomForest::importance(rf_rash1, type = 2)
+
+#randomForest::importance(rf_rash2, type = 2)
+
+randomForest::importance(rf_rash3, type = 2)
+
+```
+
+```{r}
+library(mlr3)
+library(mlr3learners)
+
+# Permutation Feature Importance Random Forest/Ranger MSE iml/mlr3
+
+# use regr for a continuous outcome (classif for classification) 
+# .rpart for regression tree
+# .nnet for neural network
+# .xgboost for xgboost
+# .ln for linear regression
+
+# this example using the indicator variables in the ranger fit
+rash_formula_train_df <- data.frame(rash_formula_train, y = rashomon_quartet_train$y)
+rash_formula_test_df <- data.frame(rash_formula_test, y = rashomon_quartet_test$y)
+
+task_rf_rash1 <- as_task_regr(rash_formula_train_df, target = "y")
+learner = lrn("regr.ranger")  
+learner$train(task_rf_rash1)
+rash_rf_pred1 <- Predictor$new(learner, 
+                       data = rash_formula_train_df[, 1:(ncol(rash_formula_train_df) - 1)], 
+                       y = rash_formula_train_df$y)
+rash_rf_import1 <- FeatureImp$new(rash_rf_pred1, loss = "mse")
+print(rash_rf_import1)
+
+imp.rf.dat <- rash_rf_import1$results
+
+ggplot(imp.rf.dat, aes(x = importance, y = factor(feature, level=c('x3', 'x2', 'x1')), 
+                       color = feature)) +
+  geom_segment(aes(y = factor(feature, level=c('x3', 'x2', 'x1')), yend = feature, x = importance.05, 
+                   xend = importance.95), linewidth = 1.5, color = "darkslategrey") +
+  geom_point(size = 6) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 18), axis.title = element_text(size = 20, face = "bold"), 
+        plot.title = element_text(size = 24, face = "bold"), legend.key.height = unit(10, 'mm'),
+        legend.key.width = unit(10, 'mm'), legend.text = element_text(size = 14), 
+        legend.title = element_text(size = 14)) +
+  labs(x = "Feature Importance (loss: MSE)",
+       y = "Feature",
+       color = "Feature",
+       title = "Feature Importance: Random Forest")
+
+# ggsave(file="RF_Importance_MSE.png", path = "/Users/keeganballantyne/Downloads",
+# device = png, dpi = 300, limitsize = TRUE)
+
+```
+
+```{r}
+# Permutation Feature Importance Random Forest/Ranger MAE iml/mlr3
+# compare loss functions mse vs mae; likely similar unless outliers
+# default permutations is only 5 *** --> meaning 5 scrambles
+
+rash_rf_pred2 <- Predictor$new(rf_rash1, 
+                       data = dframe_rash_test[, 2:4],
+                       y = dframe_rash_test$y)
+rash_rf_import2 <- FeatureImp$new(rash_rf_pred2, loss = "mae", n.repetitions = 100) 
+print(rash_rf_import2$results)
+# plot(rash_rf_import2)
+
+imp.rf.dat2 <- rash_rf_import2$results
+
+ggplot(imp.rf.dat2, aes(x = importance, y = factor(feature, level=c('x3', 'x2', 'x1')), 
+                       color = feature)) +
+  geom_segment(aes(y = factor(feature, level=c('x3', 'x2', 'x1')), yend = feature, x = importance.05, 
+                   xend = importance.95), linewidth = 1.5, color = "darkslategrey") +
+  geom_point(size = 6) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 18), axis.title = element_text(size = 20, face = "bold"), 
+        plot.title = element_text(size = 24, face = "bold"), legend.key.height = unit(10, 'mm'),
+        legend.key.width = unit(10, 'mm'), legend.text = element_text(size = 14), 
+        legend.title = element_text(size = 14)) +
+  labs(x = "Feature Importance (loss: MAE)",
+       y = "Feature",
+       color = "Feature",
+       title = "Feature Importance: Random Forest")
+
+```
+
+```{r}
+## Drop and retrain permutation feature importance Random Forest
+
+original_mse <- Metrics::mse(actual = dframe_rash_test$y, predicted = predict(rf_rash1, newdata = dframe_rash_test))
+
+nFeatures <- 3 
+
+nReps <- 15
+
+OUT <- matrix(NA, nrow = nFeatures, ncol = nReps)
+
+rownames(OUT) <- colnames(dframe_rash_test)[2:4]
+
+for(ii in seq(nFeatures)) {
+  for(jj in seq(nReps)) {
+    tmp <- dframe_rash_test # create a copy of the data
+    tmp[, ii] <- sample(tmp[, ii, drop = TRUE], size = nrow(dframe_rash_test), replace = TRUE)
+    fit_tmp <- randomForest(x = tmp[, 2:4], y = tmp$y) 
+    OUT[ii, jj] <- Metrics::mse(actual = dframe_rash_test$y, predicted = predict(fit_tmp, newdata = dframe_rash_test))
+    }
+ }
+
+rowMeans(OUT)
+
+imp.mean <- rowMeans(OUT) # mean permutation error in MSE
+imp.05 <- apply(OUT, 1, function(x) quantile(x, probs = 0.05)) # 5% confidence interval
+imp.95 <- apply(OUT, 1, function(x) quantile(x, probs = 0.95)) # 95# confidence interval
+perm.change <- data.frame(imp.mean-original_mse) # change in MSE when feature permuted
+
+perm.change[2] <- imp.05
+perm.change[3] <- imp.95
+perm.change[4] <- imp.mean
+
+colnames(perm.change) <- c('mse.change', 'imp.05', 'imp.95', 'imp.mean')
+
+perm.change <- cbind(feature = rownames(perm.change), perm.change)
+rownames(perm.change) <- 1:nrow(perm.change)
+
+ggplot(perm.change, aes(x = imp.mean, y = factor(feature, level=c('x3', 'x2', 'x1')), 
+                       color = feature)) +
+  geom_segment(aes(y = factor(feature, level=c('x3', 'x2', 'x1')), yend = feature, x = imp.05, 
+                   xend = imp.95), linewidth = 2.5, color = "darkslategrey") +
+  geom_point(size = 6) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 18), axis.title = element_text(size = 20, face = "bold"), 
+        plot.title = element_text(size = 24, face = "bold"), legend.key.height = unit(10, 'mm'),
+        legend.key.width = unit(10, 'mm'), legend.text = element_text(size = 14), 
+        legend.title = element_text(size = 14)) +
+  labs(x = "Feature Importance (loss: MSE)",
+       y = "Feature",
+       color = "Feature",
+       title = "Drop and Refit Feature Permutation: RF")
+
+```
+
+```{r}
+# 1D ALE Plots Random Forest
+
+rf_ale1 <- FeatureEffect$new(rash_rf_pred1, feature = "x1", method = "ale")
+rf_ale1$plot()
+
+rf_ale2 <- FeatureEffect$new(rash_rf_pred1, feature = "x2", method = "ale")
+rf_ale2$plot()
+
+rf_ale3 <- FeatureEffect$new(rash_rf_pred1, feature = "x3", method = "ale")
+rf_ale3$plot()
+
+```
+
+```{r}
+
+rf_ale1_2 <- FeatureEffect$new(rash_rf_pred1, feature = c("x1", "x2"), method = "ale")
+rf_ale1_2$plot()
+
+rf_ale2_3 <- FeatureEffect$new(rash_rf_pred1, feature = c("x2", "x3"), method = "ale")
+rf_ale2_3$plot()
+
+rf_ale1_3 <- FeatureEffect$new(rash_rf_pred1, feature = c("x1", "x3"), method = "ale")
+rf_ale1_3$plot()
+
+```
+
+```{r}
+## SHAP RF
+## implement shapr with mlr3
+library(shapr)
+
+explainer <- shapr(as.data.frame(rashomon_quartet_test[, 2:4]), model = rf_rash2, n_combinations = NULL)
+p <- mean(rashomon_quartet_test$y)
+
+explanation_rf <- explain(
+  as.data.frame(rashomon_quartet_test[, 2:4]),
+  approach = "empirical",
+  explainer = explainer,
+  prediction_zero = p
+)
+
+print(explanation_rf$dt)
+plot(explanation_rf, plot_phi0 = FALSE, index_x_test = c(1, 6))
+# take the average absolute value
+global_shap <- apply(as.data.frame(explanation_rf$dt), 2, function(x) mean(abs(x)))
+print(global_shap)
+```
+
+
+```{r}
+## SHAP dependence plot RF
+
+## can do for each feature
+depend_dat_rf1 <- data.frame(X = rash_formula_test_df$x1, shap = explanation_rf$dt$x1, Y = rash_formula_test_df$y)
+
+ggplot(depend_dat_rf1, aes(x = X, y = shap)) + geom_point(color = 'red') +
+  theme_bw() +
+  theme(axis.text = element_text(size = 18,), axis.title = element_text(size=20, face="bold"), 
+        plot.title = element_text(size = 20, face = "bold")) +
+  labs(x = "x1", y = "SHAP Value", title = "Feature Dependence Plot: Random Forest")
+
+  # ggsave(file="RF_SHAPDepend.png", path = "/Users/keeganballantyne/Downloads", device = png, dpi = 300, 
+         # limitsize = TRUE)
+
+depend_dat_rf2 <- data.frame(X = rash_formula_test_df$x2, shap = explanation_rf$dt$x2, Y = rash_formula_test_df$y)
+
+ggplot(depend_dat_rf2, aes(x = X, y = shap)) + geom_point(color = 'mediumblue') +
+  theme_bw() +
+  theme(axis.text = element_text(size = 18,), axis.title = element_text(size=20, face="bold"), 
+        plot.title = element_text(size = 20, face = "bold")) +
+  labs(x = "x2", y = "SHAP Value", title = "Feature Dependence Plot: Random Forest")
+
+ # ggsave(file="RF_SHAPDepend.png", path = "/Users/keeganballantyne/Downloads", device = png, dpi = 300, 
+        # limitsize = TRUE)
+
+depend_dat_rf3 <- data.frame(X = rash_formula_test_df$x3, shap = explanation_rf$dt$x3, Y = rash_formula_test_df$y)
+
+ggplot(depend_dat_rf3, aes(x = X, y = shap)) + geom_point(color = 'darkgreen') +
+  theme_bw() +
+  theme(axis.text = element_text(size = 18,), axis.title = element_text(size=20, face="bold"), 
+        plot.title = element_text(size = 20, face = "bold")) +
+  labs(x = "x3", y = "SHAP Value", title = "Feature Dependence Plot: Random Forest")
+
+ # ggsave(file="RF_SHAPDepend.png", path = "/Users/keeganballantyne/Downloads", device = png, dpi = 300, 
+        # limitsize = TRUE)
+
+```
+
+## Linear Regression
+
+```{r}
+# Do I need to double check for fulfillment of assumptions of multiple linear regression for dataset?
+## Maybe not now --> a possible next step to inquire about
+
+lm_rash1 <- lm(y ~ ., data=dframe_rash_train)
+
+```
+
+
+```{r}
+# Feature Importance Permutation MSE Linear Regression
+
+task_rash_lm <- as_task_regr(rash_formula_test_df, target = "y")
+learner_lm = lrn("regr.lm")  
+learner_lm$train(task_rash_lm)
+
+rash_pred_lm <- Predictor$new(learner, 
+                       data = rash_formula_test_df[, 1:(ncol(rash_formula_test_df) - 1)], 
+                       y = rash_formula_test_df$y)
+
+rash_import_lm <- FeatureImp$new(rash_pred_lm, loss = "mse", n.repetitions = 50)
+print(rash_import_lm)
+# plot(rash_import_lm)
+
+imp.lm.dat <- rash_import_lm$results
+
+ggplot(imp.lm.dat, aes(x = importance, y = factor(feature, level=c('x3', 'x2', 'x1')), 
+                       color = feature)) +
+  geom_segment(aes(y = factor(feature, level=c('x3', 'x2', 'x1')), yend = feature, x = importance.05, 
+                   xend = importance.95), linewidth = 1.5, color = "darkslategrey") +
+  geom_point(size = 6) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 18), axis.title = element_text(size = 20, face = "bold"), 
+        plot.title = element_text(size = 24, face = "bold"), legend.key.height = unit(10, 'mm'),
+        legend.key.width = unit(10, 'mm'), legend.text = element_text(size = 14), 
+        legend.title = element_text(size = 14)) +
+  labs(x = "Feature Importance (loss: MSE)",
+       y = "Feature",
+       color = "Feature",
+       title = "Feature Importance: Linear Regression")
+
+# ggsave(file="LM_Importance_MSE.png", path = "/Users/keeganballantyne/Downloads",
+       # device = png, dpi = 300, limitsize = TRUE)
+
+```
+
+
+```{r}
+# Feature Importance Permutation MAE Linear Regression
+
+rash_pred2_lm <- Predictor$new(lm_rash1, 
+                       data = dframe_rash_test[, 2:4],
+                       y = dframe_rash_test$y)
+
+rash_import2_lm <- FeatureImp$new(rash_pred2_lm, loss = "mae", n.repetitions = 50)
+print(rash_import2_lm$results)
+# plot(rash_import2_lm)
+
+imp.lm.dat2 <- rash_import2_lm$results
+
+ggplot(imp.lm.dat2, aes(x = importance, y = factor(feature, level=c('x3', 'x2', 'x1')), 
+                       color = feature)) +
+  geom_segment(aes(y = factor(feature, level=c('x3', 'x2', 'x1')), yend = feature, x = importance.05, 
+                   xend = importance.95), linewidth = 1.5, color = "darkslategrey") +
+  geom_point(size = 6) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 18), axis.title = element_text(size = 20, face = "bold"), 
+        plot.title = element_text(size = 24, face = "bold"), legend.key.height = unit(10, 'mm'),
+        legend.key.width = unit(10, 'mm'), legend.text = element_text(size = 14), 
+        legend.title = element_text(size = 14)) +
+  labs(x = "Feature Importance (loss: MAE)",
+       y = "Feature",
+       color = "Feature",
+       title = "Feature Importance: Linear Regression")
+
+```
+
+```{r}
+# Feature Importance Drop and Retrain Permutation MSE
+
+original_mse <- Metrics::mse(actual = dframe_rash_test$y, predicted = predict(lm_rash1, newdata = dframe_rash_test))
+
+nFeatures <- 3 
+nReps <- 15
+OUT <- matrix(NA, nrow = nFeatures, ncol = nReps)
+rownames(OUT) <- colnames(dframe_rash_test)[2:4]
+
+for(ii in seq(nFeatures)) {
+  for(jj in seq(nReps)) {
+    tmp <- dframe_rash_test # create a copy of the data
+    tmp[, ii] <- sample(tmp[, ii, drop = TRUE], size = nrow(dframe_rash_test), replace = TRUE)
+    fit_tmp <- lm(y ~ ., data = tmp) 
+    OUT[ii, jj] <- Metrics::mse(actual = dframe_rash_test$y, predicted = predict(fit_tmp, newdata = dframe_rash_test))
+    }
+ }
+
+rowMeans(OUT)
+
+imp.mean <- rowMeans(OUT) # mean permutation error in MSE
+imp.05 <- apply(OUT, 1, function(x) quantile(x, probs = 0.05)) # 5% confidence interval
+imp.95 <- apply(OUT, 1, function(x) quantile(x, probs = 0.95)) # 95# confidence interval
+perm.change <- data.frame(imp.mean-original_mse) # change in MSE when feature permuted
+
+perm.change[2] <- imp.05
+perm.change[3] <- imp.95
+perm.change[4] <- imp.mean
+
+colnames(perm.change) <- c('mse.change', 'imp.05', 'imp.95', 'imp.mean')
+
+perm.change <- cbind(feature = rownames(perm.change), perm.change)
+rownames(perm.change) <- 1:nrow(perm.change)
+
+ggplot(perm.change, aes(x = imp.mean, y = factor(feature, level=c('x3', 'x2', 'x1')), 
+                       color = feature)) +
+  geom_segment(aes(y = factor(feature, level=c('x3', 'x2', 'x1')), yend = feature, x = imp.05, 
+                   xend = imp.95), linewidth = 2.5, color = "darkslategrey") +
+  geom_point(size = 6) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 18), axis.title = element_text(size = 20, face = "bold"), 
+        plot.title = element_text(size = 24, face = "bold"), legend.key.height = unit(10, 'mm'),
+        legend.key.width = unit(10, 'mm'), legend.text = element_text(size = 14), 
+        legend.title = element_text(size = 14)) +
+  labs(x = "Feature Importance (loss: MSE)",
+       y = "Feature",
+       color = "Feature",
+       title = "Drop and Refit Feature Permutation: LM")
+
+```
+
+```{r}
+# 1 Dimensional ALE Plots LM
+
+lm_ale1 <- FeatureEffect$new(rash_pred_lm, feature = "x1", method = "ale")
+lm_ale1$plot()
+
+lm_ale2 <- FeatureEffect$new(rash_pred_lm, feature = "x2", method = "ale")
+lm_ale2$plot()
+
+lm_ale3 <- FeatureEffect$new(rash_pred_lm, feature = "x3", method = "ale")
+lm_ale3$plot()
+
+```
+
+```{r}
+# 2 Dimensional ALE Plots LM
+
+lm_ale1_2 <- FeatureEffect$new(rash_pred_lm, feature = c("x1", "x2"), method = "ale")
+lm_ale1_2$plot()
+
+lm_ale2_3 <- FeatureEffect$new(rash_pred_lm, feature = c("x2", "x3"), method = "ale")
+lm_ale2_3$plot()
+
+lm_ale1_3 <- FeatureEffect$new(rash_pred_lm, feature = c("x1", "x3"), method = "ale")
+lm_ale1_3$plot()
+
+```
+
+```{r}
+# SHAP LM
+
+explainer <- shapr(dframe_rash_test, model = lm_rash1, n_combinations = NULL)
+
+p <- mean(dframe_rash_test$y)
+
+explanation_lm <- explain(
+  dframe_rash_test,
+  approach = "empirical",
+  explainer = explainer,
+  prediction_zero = p
+)
+
+#print(explanation$dt)
+plot(explanation_lm, plot_phi0 = FALSE, index_x_test = c(1, 6))
+global_shap_lm <- apply(as.data.frame(explanation_lm$dt), 2, function(x) mean(abs(x))) 
+print(global_shap_lm)
+
+```
+
+```{r}
+# SHAP dependence plot LM
+
+depend_dat_lm1 <- data.frame(X = rash_formula_test_df$x1, shap = explanation_lm$dt$x1, Y = rash_formula_test_df$y)
+
+ggplot(depend_dat_lm1, aes(x = X, y = shap)) + geom_point(color = 'red') +
+  theme_bw() +
+  theme(axis.text = element_text(size = 18,), axis.title = element_text(size=20, face="bold"), 
+        plot.title = element_text(size = 20, face = "bold")) +
+  labs(x = "x1", y = "SHAP Value", title = "Feature Dependence Plot: Linear Regression")
+
+# ggsave(file="LM_SHAPDepend.png",
+       # path = "/Users/keeganballantyne/Downloads",
+       # device = png, dpi = 300, limitsize = TRUE)
+
+depend_dat_lm2 <- data.frame(X = rash_formula_test_df$x2, shap = explanation_lm$dt$x2, Y = rash_formula_test_df$y)
+
+ggplot(depend_dat_lm2, aes(x = X, y = shap)) + geom_point(color = 'mediumblue') +
+  theme_bw() +
+  theme(axis.text = element_text(size = 18,), axis.title = element_text(size=20, face="bold"), 
+        plot.title = element_text(size = 20, face = "bold")) +
+  labs(x = "x2", y = "SHAP Value", title = "Feature Dependence Plot: Linear Regression")
+
+depend_dat_lm3 <- data.frame(X = rash_formula_test_df$x3, shap = explanation_lm$dt$x3, Y = rash_formula_test_df$y)
+
+ggplot(depend_dat_lm3, aes(x = X, y = shap)) + geom_point(color = 'darkgreen') +
+  theme_bw() +
+  theme(axis.text = element_text(size = 18,), axis.title = element_text(size=20, face="bold"), 
+        plot.title = element_text(size = 20, face = "bold")) +
+  labs(x = "x3", y = "SHAP Value", title = "Feature Dependence Plot: Linear Regression")
+
+```
+
+## Decision Tree
+
+```{r}
+
+rash_rpart1 <- rpart(y ~ ., data = dframe_rash_train, method = 'anova')
+
+# only picks X1 for splitting, importance is correct
+# print(rash_rpart1)
+
+```
+
+```{r}
+# Feature Importance Permutation MSE Decision Tree
+
+task_rash_rpart <- as_task_regr(rash_formula_train_df, target = "y")
+rpart_learner = lrn("regr.rpart")
+# rpart_learner$model
+rpart_learner$train(task_rash_rpart)
+
+rash_pred_rpart <- Predictor$new(rpart_learner, 
+                       data = rash_formula_test_df[, 1:(ncol(rash_formula_test_df) - 1)], 
+                       y = rash_formula_test_df$y)
+
+rash_import_rpart <- FeatureImp$new(rash_pred_rpart, loss = "mse")
+#print(rash_import_rpart$results)
+#plot(rash_import_rpart)
+
+imp.rpart.dat <- rash_import_rpart$results
+head(imp.rpart.dat)
+
+ggplot(imp.rpart.dat, aes(x = importance, y = factor(feature, level=c('x3', 'x2', 'x1')), 
+                       color = feature)) +
+  geom_segment(aes(y = factor(feature, level=c('x3', 'x2', 'x1')), yend = feature, x = importance.05, 
+                   xend = importance.95), linewidth = 1.5, color = "darkslategrey") +
+  geom_point(size = 6) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 18), axis.title = element_text(size = 20, face = "bold"), 
+        plot.title = element_text(size = 24, face = "bold"), legend.key.height = unit(10, 'mm'),
+        legend.key.width = unit(10, 'mm'), legend.text = element_text(size = 14), 
+        legend.title = element_text(size = 14)) +
+  labs(x = "Feature Importance (loss: MSE)",
+       y = "Feature",
+       color = "Feature",
+       title = "Feature Importance: Decision Tree")
+
+# ggsave(file="RPART_Importance_MSE.png", path = "/Users/keeganballantyne/Downloads",
+       # device = png, dpi = 300, limitsize = TRUE)
+
+# Note for visualization purposes X2 is above X3 by random choice since 
+# both of their mean importance are exactly equal
+
+```
+
+```{r}
+# Feature Importance Permutation MAE
+
+rash_pred2_rpart <- Predictor$new(rash_rpart1, 
+                       data = dframe_rash_test[, 2:4],
+                       y = dframe_rash_test$y)
+
+rash_import2_rpart <- FeatureImp$new(rash_pred2_rpart, loss = "mae", n.repetitions = 50)
+print(rash_import2_rpart$results)
+# plot(rash_import2_rpart)
+
+imp.rpart.dat2 <- rash_import2_rpart$results
+
+ggplot(imp.rpart.dat2, aes(x = importance, y = factor(feature, level=c('x3', 'x2', 'x1')), 
+                       color = feature)) +
+  geom_segment(aes(y = factor(feature, level=c('x3', 'x2', 'x1')), yend = feature, x = importance.05, 
+                   xend = importance.95), linewidth = 1.5, color = "darkslategrey") +
+  geom_point(size = 6) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 18), axis.title = element_text(size = 20, face = "bold"), 
+        plot.title = element_text(size = 24, face = "bold"), legend.key.height = unit(10, 'mm'),
+        legend.key.width = unit(10, 'mm'), legend.text = element_text(size = 14), 
+        legend.title = element_text(size = 14)) +
+  labs(x = "Feature Importance (loss: MAE)",
+       y = "Feature",
+       color = "Feature",
+       title = "Feature Importance: Decision Tree")
+
+```
+
+```{r}
+# Feature Importance Drop and Retrain Permutation MSE
+
+original_mse <- Metrics::mse(actual = dframe_rash_test$y, predicted = predict(rash_rpart1, newdata = dframe_rash_test))
+
+nFeatures <- 3 
+nReps <- 15
+OUT <- matrix(NA, nrow = nFeatures, ncol = nReps)
+rownames(OUT) <- colnames(dframe_rash_test)[2:4]
+
+for(ii in seq(nFeatures)) {
+  for(jj in seq(nReps)) {
+    tmp <- dframe_rash_train # create a copy of the data
+    tmp[, ii] <- sample(tmp[, ii, drop = TRUE], size = nrow(dframe_rash_train), replace = TRUE)
+    fit_tmp <- rpart(y ~ ., data = tmp, method = 'anova') 
+    OUT[ii, jj] <- Metrics::mse(actual = rashomon_quartet_test$y, predicted = predict(fit_tmp, newdata = rashomon_quartet_test))
+    }
+ }
+
+rowMeans(OUT)
+
+imp.mean <- rowMeans(OUT) # mean permutation error in MSE
+imp.05 <- apply(OUT, 1, function(x) quantile(x, probs = 0.05)) # 5% confidence interval
+imp.95 <- apply(OUT, 1, function(x) quantile(x, probs = 0.95)) # 95# confidence interval
+perm.change <- data.frame(imp.mean-original_mse) # change in MSE when feature permuted compared to loss
+
+perm.change[2] <- imp.05
+perm.change[3] <- imp.95
+perm.change[4] <- imp.mean
+
+colnames(perm.change) <- c('mse.change', 'imp.05', 'imp.95', 'imp.mean')
+
+perm.change <- cbind(feature = rownames(perm.change), perm.change)
+rownames(perm.change) <- 1:nrow(perm.change)
+
+ggplot(perm.change, aes(x = imp.mean, y = factor(feature, level=c('x3', 'x2', 'x1')), 
+                       color = feature)) +
+  geom_segment(aes(y = factor(feature, level=c('x3', 'x2', 'x1')), yend = feature, x = imp.05, 
+                   xend = imp.95), linewidth = 2.5, color = "darkslategrey") +
+  geom_point(size = 6) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 18), axis.title = element_text(size = 20, face = "bold"), 
+        plot.title = element_text(size = 20, face = "bold"), legend.key.height = unit(10, 'mm'),
+        legend.key.width = unit(10, 'mm'), legend.text = element_text(size = 14), 
+        legend.title = element_text(size = 14)) +
+  labs(x = "Feature Importance (loss: MSE)",
+       y = "Feature",
+       color = "Feature",
+       title = "Drop and Refit Feature Permutation: RPART")
+
+```
+
+```{r}
+# 1 Dimensional ALE Plots Decision Tree
+
+rpart_ale1 <- FeatureEffect$new(rash_pred_rpart, feature = "x1", method = "ale")
+rpart_ale1$plot()
+
+rpart_ale2 <- FeatureEffect$new(rash_pred_rpart, feature = "x2", method = "ale")
+rpart_ale2$plot()
+
+rpart_ale3 <- FeatureEffect$new(rash_pred_rpart, feature = "x3", method = "ale")
+rpart_ale3$plot()
+
+```
+
+```{r}
+# 2 Dimensional ALE Plots Decision Tree
+
+rpart_ale1_2 <- FeatureEffect$new(rash_pred_rpart, feature = c("x1", "x2"), method = "ale")
+rpart_ale1_2$plot()
+
+rpart_ale2_3 <- FeatureEffect$new(rash_pred_rpart, feature = c("x2", "x3"), method = "ale")
+rpart_ale2_3$plot()
+
+rpart_ale1_3 <- FeatureEffect$new(rash_pred_rpart, feature = c("x1", "x3"), method = "ale")
+rpart_ale1_3$plot()
+
+```
+
+```{r}
+# Implementing SHAP with custom method Decision Tree
+
+predict_model.LearnerRegrRpart <- function(x, newdata) {
+  
+  if (!requireNamespace('mlr3', quietly = TRUE)) {
+    stop('The mlr3 package is required for predicting train models')
+  }
+  
+  predict(x, as.data.frame(newdata))
+}
+
+get_model_specs.LearnerRegrRpart <- function(x){
+  feature_list = list()
+  feature_list$labels <- learner$state$train_task$feature_names
+  m <- length(feature_list$labels)
+  
+  feature_list$classes <- learner$state$train_task$feature_types$type
+  feature_list$factor_levels <- NA
+  feature_list$factor_levels[feature_list$classes=="factor"] <- NA # the model object doesn't contain factor levels info
+  
+  return(feature_list)
+}
+
+explainer <- shapr(as.data.frame(rashomon_quartet_test[, 2:4]), model = rpart_learner)
+p <- mean(rashomon_quartet_test$y)
+
+explanation_rpart <- explain(
+  as.data.frame(rashomon_quartet_test[, 2:4]),
+  approach = "empirical",
+  explainer = explainer,
+  prediction_zero = p
+)
+
+# print(explanation$dt)
+plot(explanation_rpart, plot_phi0 = FALSE, index_x_test = c(1, 6))
+global_shap_rpart <- apply(as.data.frame(explanation_rpart$dt), 2, function(x) mean(abs(x))) 
+print(global_shap_rpart)
+
+```
+
+```{r}
+# SHAP dependence plot
+
+depend_dat_rrpart1 <- data.frame(X = rash_formula_test_df$x1, shap = explanation_rpart$dt$x1, 
+                                 Y = rash_formula_test_df$y)
+
+ggplot(depend_dat_rrpart1, aes(x = X, y = shap)) + geom_point(color = 'red') +
+  theme_bw() +
+  theme(axis.text = element_text(size = 18,), axis.title = element_text(size=20, face="bold"), 
+        plot.title = element_text(size = 20, face = "bold")) +
+  labs(x = "x1", y = "SHAP Value", title = "Feature Dependence Plot: Decision Tree")
+
+# ggsave(file="RPART_SHAPDepend.png",
+       # path = "/Users/keeganballantyne/Downloads",
+       # device = png, dpi = 300, limitsize = TRUE)
+
+depend_dat_rrpart2 <- data.frame(X = rash_formula_test_df$x2, shap = explanation_rpart$dt$x2, 
+                                 Y = rash_formula_test_df$y)
+
+ggplot(depend_dat_rrpart2, aes(x = X, y = shap)) + geom_point(color = 'mediumblue') +
+  theme_bw() +
+  theme(axis.text = element_text(size = 18,), axis.title = element_text(size=20, face="bold"), 
+        plot.title = element_text(size = 20, face = "bold")) +
+  labs(x = "x2", y = "SHAP Value", title = "Feature Dependence Plot: Decision Tree")
+
+depend_dat_rrpart3 <- data.frame(X = rash_formula_test_df$x3, shap = explanation_rpart$dt$x3, 
+                                 Y = rash_formula_test_df$y)
+
+ggplot(depend_dat_rrpart3, aes(x = X, y = shap)) + geom_point(color = 'darkgreen') +
+  theme_bw() +
+  theme(axis.text = element_text(size = 18,), axis.title = element_text(size=20, face="bold"), 
+        plot.title = element_text(size = 20, face = "bold")) +
+  labs(x = "x3", y = "SHAP Value", title = "Feature Dependence Plot: Decision Tree")
+
+```
+
+## Neural Network
+
+```{r}
+
+rash_nnet1 <- neuralnet(y ~ ., data = rashomon_quartet_train, hidden=c(8,4), threshold = 0.05)
+
+```
+
+```{r}
+# Feature Importance Permutation MSE NNET
+task_rash_nnet <- as_task_regr(rash_formula_train_df, target = "y")
+nnet_learner = lrn("regr.nnet")  
+nnet_learner$train(task_rash_nnet)
+
+rash_pred_nnet <- Predictor$new(nnet_learner, 
+                       data = rash_formula_test_df[, 1:(ncol(rash_formula_test_df) - 1)], 
+                       y = rash_formula_test_df$y)
+
+rash_import_nnet <- FeatureImp$new(rash_pred_nnet, loss = "mse")
+#print(rash_import_nnet$results)
+#plot(rash_import_nnet)
+
+imp.nnet.dat <- rash_import_nnet$results
+head(imp.nnet.dat)
+
+ggplot(imp.nnet.dat, aes(x = importance, y = factor(feature, level=c('x3', 'x2', 'x1')), 
+                       color = feature)) +
+  geom_segment(aes(y = factor(feature, level=c('x3', 'x2', 'x1')), yend = feature, x = importance.05, 
+                   xend = importance.95), size = 1.5, color = "darkslategrey") +
+  geom_point(size = 6) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 18), axis.title = element_text(size = 20, face = "bold"), 
+        plot.title = element_text(size = 24, face = "bold"), legend.key.height = unit(10, 'mm'),
+        legend.key.width = unit(10, 'mm'), legend.text = element_text(size = 14), 
+        legend.title = element_text(size = 14)) +
+  labs(x = "Feature Importance (loss: MSE)",
+       y = "Feature",
+       color = "Feature",
+       title = "Feature Importance: Neural Network")
+
+# ggsave(file="NNET_Importance_MSE.png", path = "/Users/keeganballantyne/Downloads",
+       # device = png, dpi = 300, limitsize = TRUE)
+
+```
+
+```{r}
+# Feature Importance Permutation MAE NNET
+
+rash_pred2_nnet <- Predictor$new(rash_nnet1, 
+                       data = dframe_rash_test[, 2:4],
+                       y = dframe_rash_test$y)
+
+rash_import2_nnet <- FeatureImp$new(rash_pred2_nnet, loss = "mae", n.repetitions = 50)
+#print(rash_import2_nnet$results)
+
+imp.nnet.dat2 <- rash_import2_nnet$results
+head(imp.nnet.dat2)
+
+ggplot(imp.nnet.dat2, aes(x = importance, y = factor(feature, level=c('x2', 'x3', 'x1')), 
+                       color = feature)) +
+  geom_segment(aes(y = factor(feature, level=c('x2', 'x3', 'x1')), yend = feature, x = importance.05, 
+                   xend = importance.95), size = 1.5, color = "darkslategrey") +
+  geom_point(size = 6) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 18), axis.title = element_text(size = 20, face = "bold"), 
+        plot.title = element_text(size = 24, face = "bold"), legend.key.height = unit(10, 'mm'),
+        legend.key.width = unit(10, 'mm'), legend.text = element_text(size = 14), 
+        legend.title = element_text(size = 14)) +
+  labs(x = "Feature Importance (loss: MAE)",
+       y = "Feature",
+       color = "Feature",
+       title = "Feature Importance: Neural Network")
+
+```
+
+```{r}
+# Feature Importance Drop and Retrain Permutation MSE NNET
+# Worked a few times before but now running into bugs need to troubleshoot
+
+original_mse <- Metrics::mse(actual = dframe_rash_test$y, predicted = predict(rash_nnet1, 
+                                                                              newdata = dframe_rash_test))
+
+nFeatures <- 3 
+nReps <- 15
+OUT <- matrix(NA, nrow = nFeatures, ncol = nReps)
+rownames(OUT) <- colnames(dframe_rash_test)[2:4]
+
+for(ii in seq(nFeatures)) {
+  for(jj in seq(nReps)) {
+    tmp <- dframe_rash_train # create a copy of the data
+    tmp[, ii] <- sample(tmp[, ii, drop = TRUE], size = nrow(dframe_rash_train), replace = TRUE)
+    fit_tmp <- neuralnet(y ~ ., data = tmp, hidden=c(8,4), threshold = 0.05, stepmax = 1e+05) 
+    OUT[ii, jj] <- Metrics::mse(actual = dframe_rash_test$y, predicted = predict(fit_tmp, 
+                                                                                 newdata = dframe_rash_test))
+    }
+ }
+
+rowMeans(OUT)
+
+imp.mean <- rowMeans(OUT) # mean permutation error in MSE
+imp.05 <- apply(OUT, 1, function(x) quantile(x, probs = 0.05)) # 5% confidence interval
+imp.95 <- apply(OUT, 1, function(x) quantile(x, probs = 0.95)) # 95# confidence interval
+perm.change <- data.frame(imp.mean-original_mse) # change in MSE when feature permuted compared to loss
+
+perm.change[2] <- imp.05
+perm.change[3] <- imp.95
+perm.change[4] <- imp.mean
+
+colnames(perm.change) <- c('mse.change', 'imp.05', 'imp.95', 'imp.mean')
+
+perm.change <- cbind(feature = rownames(perm.change), perm.change)
+rownames(perm.change) <- 1:nrow(perm.change)
+
+ggplot(perm.change, aes(x = imp.mean, y = factor(feature, level=c('x2', 'x3', 'x1')), 
+                       color = feature)) +
+  geom_segment(aes(y = factor(feature, level=c('x2', 'x3', 'x1')), yend = feature, x = imp.05, 
+                   xend = imp.95), linewidth = 2.5, color = "darkslategrey") +
+  geom_point(size = 6) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 18), axis.title = element_text(size = 20, face = "bold"), 
+        plot.title = element_text(size = 20, face = "bold"), legend.key.height = unit(10, 'mm'),
+        legend.key.width = unit(10, 'mm'), legend.text = element_text(size = 14), 
+        legend.title = element_text(size = 14)) +
+  labs(x = "Feature Importance (loss: MSE)",
+       y = "Feature",
+       color = "Feature",
+       title = "Drop and Refit Feature Permutation: NNET")
+
+```
+
+```{r}
+# 1 Dimensional ALE Plots Neural Network
+
+nnet_ale1 <- FeatureEffect$new(rash_pred_nnet, feature = "x1", method = "ale")
+nnet_ale1$plot()
+
+nnet_ale2 <- FeatureEffect$new(rash_pred_nnet, feature = "x2", method = "ale")
+nnet_ale2$plot()
+
+nnet_ale3 <- FeatureEffect$new(rash_pred_nnet, feature = "x3", method = "ale")
+nnet_ale3$plot()
+
+```
+
+```{r}
+# 2 Dimensional ALE Plots Neural Network
+
+nnet_ale1_2 <- FeatureEffect$new(rash_pred_nnet, feature = c("x1", "x2"), method = "ale")
+nnet_ale1_2$plot()
+
+nnet_ale2_3 <- FeatureEffect$new(rash_pred_nnet, feature = c("x2", "x3"), method = "ale")
+nnet_ale2_3$plot()
+
+nnet_ale1_3 <- FeatureEffect$new(rash_pred_nnet, feature = c("x1", "x3"), method = "ale")
+nnet_ale1_3$plot()
+
+```
+
+```{r}
+# Implementing SHAP with custom method Neural Network
+
+predict_model.LearnerRegrNnet <- function(x, newdata) {
+  
+  if (!requireNamespace('mlr3', quietly = TRUE)) {
+    stop('The mlr3 package is required for predicting train models')
+  }
+  
+  predict(x, newdata = newdata)
+}
+
+get_model_specs.LearnerRegrNnet <- function(x){
+  feature_list = list()
+  feature_list$labels <- learner$state$train_task$feature_names
+  m <- length(feature_list$labels)
+  feature_list$classes <- learner$state$train_task$feature_types$type
+  feature_list$factor_levels <- NA
+  feature_list$factor_levels[feature_list$classes=="factor"] <- NA 
+  return(feature_list)
+}
+
+explainer <- shapr(as.data.frame(rashomon_quartet_test[, 2:4]), model = nnet_learner)
+p <- mean(rashomon_quartet_test$y)
+
+nnet_explanation <- explain(
+  as.data.frame(rashomon_quartet_test[, 2:4]),
+  approach = "empirical",
+  explainer = explainer,
+  prediction_zero = p
+)
+
+print(nnet_explanation$dt)
+plot(nnet_explanation, plot_phi0 = FALSE, index_x_test = c(1, 6))
+global_shap_nnet <- apply(as.data.frame(nnet_explanation$dt), 2, function(x) mean(abs(x)))
+print(global_shap_nnet)
+
+```
+
+```{r}
+# SHAP dependence plot NNET
+
+depend_dat_nnet1 <- data.frame(X = rash_formula_test_df$x1, shap = nnet_explanation$dt$x1, 
+                               Y = rash_formula_test_df$y)
+
+ggplot(depend_dat_nnet1, aes(x = X, y = shap)) + geom_point(color = 'red') +
+  theme_bw() +
+  theme(axis.text = element_text(size = 18,), axis.title = element_text(size=20, face="bold"), 
+        plot.title = element_text(size = 20, face = "bold")) +
+  labs(x = "x1", y = "SHAP Value", title = "Feature Dependence Plot: Neural Network")
+
+# ggsave(file="NNET_SHAPDepend.png",
+       # path = "/Users/keeganballantyne/Downloads",
+       # device = png, dpi = 300, limitsize = TRUE)
+
+depend_dat_nnet2 <- data.frame(X = rash_formula_test_df$x2, shap = nnet_explanation$dt$x2, 
+                               Y = rash_formula_test_df$y)
+
+ggplot(depend_dat_nnet2, aes(x = X, y = shap)) + geom_point(color = 'mediumblue') +
+  theme_bw() +
+  theme(axis.text = element_text(size = 18,), axis.title = element_text(size=20, face="bold"), 
+        plot.title = element_text(size = 20, face = "bold")) +
+  labs(x = "x2", y = "SHAP Value", title = "Feature Dependence Plot: Neural Network")
+
+depend_dat_nnet3 <- data.frame(X = rash_formula_test_df$x3, shap = nnet_explanation$dt$x3, 
+                               Y = rash_formula_test_df$y)
+
+ggplot(depend_dat_nnet3, aes(x = X, y = shap)) + geom_point(color = 'darkgreen') +
+  theme_bw() +
+  theme(axis.text = element_text(size = 18,), axis.title = element_text(size=20, face="bold"), 
+        plot.title = element_text(size = 20, face = "bold")) +
+  labs(x = "x3", y = "SHAP Value", title = "Feature Dependence Plot: Neural Network")
+
+```
+
+## Xgboost (XGB)
+
+```{r}
+library(xgboost)
+
+# define predictor and response variables in training set
+train_x = mat_rash_train[, 2:4]
+train_y = mat_rash_train[, 1]
+
+# define predictor and response variables in testing set
+test_x = mat_rash_test[, 2:4]
+test_y = mat_rash_test[, 1]
+
+# define final training and testing sets
+xgb_train = xgb.DMatrix(data = train_x, label = train_y)
+xgb_test = xgb.DMatrix(data = test_x, label = test_y)
+
+# watchlist <- list(train=xgb_train, test=xgb_test)
+# can add watchlist argument to xgboost fitted model to see which iteration has lowest RMSE
+
+rash_xgboost <- xgb.train(data = xgb_train, max.depth = 3, nrounds = 10)
+
+```
+
+```{r}
+# Fine-tuning parameters for xgboost model with 10 fold cross validation
+# Cross validation calculated XGB RMSE testing data ~ 0.34 
+# Slightly more accurate compared to other models but relatively the same
+
+rwCV <- xgb.cv(params = list(eta = 0.3),
+               data = xgb_train, 
+               nfold = 10,
+               nrounds = 500,
+               early_stopping_rounds = 10,
+               print_every_n = 5)
+
+print(names(rwCV))
+```
+
+```{r}
+# Manually calculating RMSE on XGB ~ 0.34 
+# Same as the CV RMSE calculation for XGB and close to the RMSE for the other algorithms
+
+pred_y <- predict(rash_xgboost, xgb_test)
+RMSE(pred_y, test_y) #rmse
+```
+
+```{r}
+# Feature Importance Permutation MSE XGBOOST
+## Disconnect between directly using xgboost and mlr3 for feature importance --> just use mlr3 for mae
+## Possible use of utilizing a wrapper function for using iml directly for feature importance
+
+task_rash_xgboost <- as_task_regr(rash_formula_train_df, target = "y")
+learner = lrn("regr.xgboost")  
+learner$train(task_rash_xgboost)
+
+rash_pred_xgboost <- Predictor$new(learner, 
+                       data = rash_formula_train_df[, 1:(ncol(rash_formula_train_df) - 1)], 
+                       y = rash_formula_train_df$y)
+
+rash_import_xgboost <- FeatureImp$new(rash_pred_xgboost, loss = "mse") 
+# print(rash_import_xgboost$results)
+# plot(rash_import_xgboost)
+
+imp.xgboost.dat <- rash_import_xgboost$results
+head(imp.xgboost.dat)
+
+ggplot(imp.xgboost.dat, aes(x = importance, y = factor(feature, level=c('x3', 'x2', 'x1')), 
+                       color = feature)) +
+  geom_segment(aes(y = factor(feature, level=c('x3', 'x2', 'x1')), yend = feature, x = importance.05, 
+                   xend = importance.95), size = 1.5, color = "darkslategrey") +
+  geom_point(size = 6) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 18), axis.title = element_text(size = 20, face = "bold"), 
+        plot.title = element_text(size = 24, face = "bold"), legend.key.height = unit(10, 'mm'),
+        legend.key.width = unit(10, 'mm'), legend.text = element_text(size = 14), 
+        legend.title = element_text(size = 14)) +
+  labs(x = "Feature Importance (loss: MSE)",
+       y = "Feature",
+       color = "Feature",
+       title = "Feature Importance: XGBoost")
+
+# ggsave(file="XGBOOST_Importance_MSE.png", 
+       # path = "/Users/keeganballantyne/Downloads",
+       # device = png, dpi = 300, limitsize = TRUE)
+
+```
+
+```{r}
+## Wrapper function to use iml package with a SuperLearner predictor
+create_predict_fun.SuperLearner <- function(model, task = "regression", predict.fun = NULL, type = NULL) {
+  function(newdata) {
+    pred <- SuperLearner::predict.SuperLearner(model, newdata = newdata, onlySL = TRUE)
+    out <- as.data.frame(pred$pred[, 1, drop = FALSE])  # only want the SL predictions, and as a vector
+    return(out)
+  }
+}
+
+
+## example usage
+library(SuperLearner)
+library(iml)
+
+set.seed(23432)
+## training set
+n <- 500
+p <- 10
+X <- matrix(rnorm(n*p), nrow = n, ncol = p)
+colnames(X) <- paste("X", 1:p, sep="")
+X <- data.frame(X)
+Y <- X[, 1] + sqrt(abs(X[, 2] * X[, 3])) + X[, 2] - X[, 3] + rnorm(n)
+
+## test set
+m <- 1000
+newX <- matrix(rnorm(m*p), nrow = m, ncol = p)
+colnames(newX) <- paste("X", 1:p, sep="")
+newX <- data.frame(newX)
+newY <- newX[, 1] + sqrt(abs(newX[, 2] * newX[, 3])) + newX[, 2] -
+  newX[, 3] + rnorm(m)
+
+# generate Library and run Super Learner
+SL.library <- c("SL.glm", "SL.randomForest", "SL.glmnet", "SL.polymars", "SL.ranger", "SL.mean")
+test <- SuperLearner(Y = Y, X = X, newX = newX, SL.library = SL.library, method = "method.NNLS")
+test
+
+create_predict_fun.SuperLearner <- function(model, task = "regression", predict.fun = NULL, type = NULL) {
+		function(newdata) {
+			pred <- SuperLearner::predict.SuperLearner(model, newdata = newdata, onlySL = TRUE)
+			out <- as.data.frame(pred$pred[, 1, drop = FALSE])  # only want the SL predictions, and as a vector
+			return(out)
+		}
+}
+
+predictor <- Predictor$new(model = test,
+							 data = X, 
+							 y = Y, 
+							 predict.function = create_predict_fun.SuperLearner)
+							 
+imp <- FeatureImp$new(predictor, loss = "mse")
+imp
+plot(imp)
+effect = FeatureEffects$new(predictor)
+effect$plot()
+
+# randomForests from the ensemble
+predictor <- Predictor$new(test$fitLibrary$SL.randomForest_All$object, data = X, y = Y)
+imp <- FeatureImp$new(predictor, loss = "mae")
+plot(imp)
+imp$results
+effect = FeatureEffects$new(predictor)
+effect$plot()  # accumulated local effects
+
+# surrogate model
+tree <- TreeSurrogate$new(predictor, maxdepth = 3)
+plot(tree)
+
+### example with binary outcome
+# binary outcome
+set.seed(1)
+N <- 500
+X <- matrix(rnorm(N*10), N, 10)
+X <- as.data.frame(X)
+Y <- rbinom(N, 1, plogis(.2*X[, 1] + .1*X[, 2] - .2*X[, 3] + .1*X[, 3]*X[, 4] - .2*abs(X[, 4])))
+
+SL.library <- c("SL.glmnet", "SL.glm", "SL.knn", "SL.gam", "SL.randomForest", "SL.mean")
+
+# least squares loss function
+fit <- SuperLearner(Y = Y, X = X, SL.library = SL.library, method = "method.NNLS", family = binomial())
+fit
+
+predictor <- Predictor$new(model = fit,
+							 data = X, 
+							 y = Y, 
+							 predict.function = create_predict_fun.SuperLearner)
+							 
+imp <- FeatureImp$new(predictor, loss = "logLoss")
+imp
+plot(imp)
+
+# compare with glm coef estimates
+summary(fit$fitLibrary$SL.glm_All$object)
+```
+
+```{r}
+# Feature Importance Permutation MAE XGBOOST
+## Disconnect between directly using xgboost and mlr3 for feature importance --> just use mlr3 for mae
+## Possible use of utilizing a wrapper function for using iml directly for feature importance
+
+rash_pred2_xgboost <- Predictor$new(rash_xgboost, 
+                       data = xgb_test[, 2:4],
+                       y = dframe_rash_test$y)
+
+rash_import2_xgboost <- FeatureImp$new(rash_pred2_xgboost, loss = "mae", n.repetitions = 50)
+print(rash_import2_xgboost$results)
+plot(rash_import2_xgboost)
+
+```
+
+```{r}
+# Drop and Refit Permutation Feature Importance XGBOOST MSE
+
+original_mse <- Metrics::mse(actual = dframe_rash_test$y, predicted = predict(rash_xgboost, newdata = xgb_test))
+nFeatures <- 3
+nReps <- 15
+OUT <- matrix(NA, nrow = nFeatures, ncol = nReps)
+rownames(OUT) <- colnames(dframe_rash_test)[2:4]
+
+for(ii in seq(nFeatures)) {
+  for(jj in seq(nReps)) {
+    tmp <- dframe_rash_test # create a copy of the data
+    tmp[, ii] <- sample(tmp[, ii, drop = TRUE], size = nrow(dframe_rash_test), replace = TRUE)
+    tmp <- as.matrix(tmp)
+    tmp_mat <- xgb.DMatrix(data = tmp[, -1], label = tmp[, 1])
+    fit_tmp <- xgboost(y ~ ., data = tmp_mat, max.depth = 3, nrounds = 10, verbose = 0) 
+    OUT[ii, jj] <- Metrics::mse(actual = dframe_rash_test$y, predicted = predict(fit_tmp, newdata = xgb_test))
+    }
+ }
+
+rowMeans(OUT)
+difference_loss <- original_mse - means
+print(difference_loss) # difference in mse is largest in x1 so its most important
+
+imp.mean <- rowMeans(OUT) # mean permutation error in MSE
+imp.05 <- apply(OUT, 1, function(x) quantile(x, probs = 0.05)) # 5% confidence interval
+imp.95 <- apply(OUT, 1, function(x) quantile(x, probs = 0.95)) # 95# confidence interval
+perm.change <- data.frame(imp.mean-original_mse) # change in MSE when feature permuted compared to loss
+
+perm.change[2] <- imp.05
+perm.change[3] <- imp.95
+perm.change[4] <- imp.mean
+
+colnames(perm.change) <- c('mse.change', 'imp.05', 'imp.95', 'imp.mean')
+
+perm.change <- cbind(feature = rownames(perm.change), perm.change)
+rownames(perm.change) <- 1:nrow(perm.change)
+
+ggplot(perm.change, aes(x = imp.mean, y = factor(feature, level=c('x3', 'x2', 'x1')), 
+                       color = feature)) +
+  geom_segment(aes(y = factor(feature, level=c('x3', 'x2', 'x1')), yend = feature, x = imp.05, 
+                   xend = imp.95), linewidth = 1.5, color = "darkslategrey") +
+  geom_point(size = 6) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 18), axis.title = element_text(size = 20, face = "bold"), 
+        plot.title = element_text(size = 20, face = "bold"), legend.key.height = unit(10, 'mm'),
+        legend.key.width = unit(10, 'mm'), legend.text = element_text(size = 14), 
+        legend.title = element_text(size = 14)) +
+  labs(x = "Feature Importance (loss: MSE)",
+       y = "Feature",
+       color = "Feature",
+       title = "Drop and Refit Feature Permutation: XGB")
+
+```
+
+```{r}
+# 1 Dimensional ALE Plots XGBoost
+
+xgboost_ale1 <- FeatureEffect$new(rash_pred_xgboost, feature = "x1", method = "ale")
+xgboost_ale1$plot()
+
+xgboost_ale2 <- FeatureEffect$new(rash_pred_xgboost, feature = "x2", method = "ale")
+xgboost_ale2$plot()
+
+xgboost_ale3 <- FeatureEffect$new(rash_pred_xgboost, feature = "x3", method = "ale")
+xgboost_ale3$plot()
+
+```
+
+```{r}
+# 2 Dimensional ALE Plots XGBoost
+
+xgboost_ale1_2 <- FeatureEffect$new(rash_pred_xgboost, feature = c("x1", "x2"), method = "ale")
+xgboost_ale1_2$plot()
+
+xgboost_ale2_3 <- FeatureEffect$new(rash_pred_xgboost, feature = c("x2", "x3"), method = "ale")
+xgboost_ale2_3$plot()
+
+xgboost_ale1_3 <- FeatureEffect$new(rash_pred_xgboost, feature = c("x1", "x3"), method = "ale")
+xgboost_ale1_3$plot()
+
+```
+
+```{r}
+## SHAP Values XGBOOST
+
+explainer <- shapr(as.data.frame(dframe_rash_train[, 2:4]), model = rash_xgboost, n_combinations = NULL)
+p <- mean(rashomon_quartet_train$y)
+
+xgboost_explanation <- explain(
+  as.data.frame(rashomon_quartet_train[, 2:4]),
+  approach = "empirical",
+  explainer = explainer,
+  prediction_zero = p
+)
+
+print(xgboost_explanation$dt)
+plot(xgboost_explanation, plot_phi0 = FALSE, index_x_test = c(1, 6))
+global_shap_xgboost <- apply(as.data.frame(xgboost_explanation$dt), 2, function(x) mean(abs(x)))
+print(global_shap_xgboost)
+
+```
+
+```{r}
+## SHAP dependence plot XGBOOST
+
+depend_dat_xgboost1 <- data.frame(X = rash_formula_test_df$x1, shap = xgboost_explanation$dt$x1, 
+                                  Y = rash_formula_test_df$y)
+
+ggplot(depend_dat_xgboost1, aes(x = X, y = shap)) + geom_point(color = 'red') +
+  theme_bw() +
+  theme(axis.text = element_text(size = 18,), axis.title = element_text(size=20, face="bold"), 
+        plot.title = element_text(size = 20, face = "bold")) +
+  labs(x = "x1", y = "SHAP Value", title = "Feature Dependence Plot: XGBoost")
+
+# ggsave(file="XGBOOST_SHAPDepend.png",
+       # path = "/Users/keeganballantyne/Downloads",
+       # device = png, dpi = 300, limitsize = TRUE)
+
+depend_dat_xgboost2 <- data.frame(X = rash_formula_test_df$x2, shap = xgboost_explanation$dt$x2, 
+                                  Y = rash_formula_test_df$y)
+
+ggplot(depend_dat_xgboost2, aes(x = X, y = shap)) + geom_point(color = 'mediumblue') +
+  theme_bw() +
+  theme(axis.text = element_text(size = 18,), axis.title = element_text(size=20, face="bold"), 
+        plot.title = element_text(size = 20, face = "bold")) +
+  labs(x = "x2", y = "SHAP Value", title = "Feature Dependence Plot: XGBoost")
+
+depend_dat_xgboost3 <- data.frame(X = rash_formula_test_df$x3, shap = xgboost_explanation$dt$x3, 
+                                  Y = rash_formula_test_df$y)
+
+ggplot(depend_dat_xgboost3, aes(x = X, y = shap)) + geom_point(color = 'darkgreen') +
+  theme_bw() +
+  theme(axis.text = element_text(size = 18,), axis.title = element_text(size=20, face="bold"), 
+        plot.title = element_text(size = 20, face = "bold")) +
+  labs(x = "x3", y = "SHAP Value", title = "Feature Dependence Plot: XGBoost")
+
+```
+
+
+```{r}
+# Another visualization putting permutation feature importance (loss: MSE) outputs into one graph with all 5 models
+
+# toy dataset
+dat <- data.frame(feature = rep(c("X1", "X2", "X3"), times = 5),
+                     importance = c(11.1, 5.5, 4.4, 5.3, 1.2, 1.02, 6.6, 1, 1, 5.1, 1.12, 1.16, 1.5, 1.05, 1.01),
+                     Algorithm = rep(c("Random Forest", "Linear Regression", "Decision Tree", 
+                                       "Neural Network", "XGBoost"), each = 3))
+
+ggplot(dat, aes(x = importance, y = factor(feature, level=c('X3', 'X2', 'X1')), group = Algorithm, 
+                color = Algorithm, shape = Algorithm, fill = Algorithm)) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 18), axis.title = element_text(size = 20, face = "bold"), 
+        plot.title = element_text(size = 22, face = "bold"), legend.key.height = unit(10, 'mm'),
+        legend.key.width = unit(10, 'mm'), legend.text = element_text(size = 14), 
+        legend.title = element_text(size = 16)) +
+  labs(x = "Feature Importance (loss: MSE)",
+       y = "Feature",
+       title = "Feature Importance Plot") +
+  scale_shape_manual(values = c(21, 22, 23, 24, 25)) +
+  geom_col(position = position_dodge(width = 0.7), size = 0.01, alpha = 0.5, width = 0.6)
+
+# ggsave(file="FeatureImp_5Models.png",
+       # path = "/Users/keeganballantyne/Downloads",
+       # device = png, dpi = 300, limitsize = TRUE)
+
+```
